@@ -7,7 +7,7 @@ import AppSyncBatchResolverFunction from './AppSyncBatchResolverFunction';
 import FunctionLog from './FunctionLog';
 import { HttpStatusCode } from './HttpStatusCode';
 import S3Function from './S3Function';
-import DynamoDBStreamFunction from './DynamoDBStreamFunction';
+import DynamoDBStreamFunction, { DynamoDBEventTypes } from './DynamoDBStreamFunction';
 
 export {
   FunctionLog,
@@ -20,4 +20,5 @@ export {
   SQSFunction,
   S3Function,
   DynamoDBStreamFunction,
+  DynamoDBEventTypes,
 };
