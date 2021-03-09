@@ -7,12 +7,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda/trigger/
 
 import createHttpError from 'http-errors';
 import FunctionLog from './FunctionLog';
-
 import { HttpStatusCode } from './HttpStatusCode';
 
 export default abstract class ApiGatewayFunction<TReq, TRes> {
   //
   static Log: FunctionLog | undefined;
+
+  static getCorrelationIds?: () => any;
 
   responseStatusCode = HttpStatusCode.OK;
 
@@ -39,10 +40,11 @@ export default abstract class ApiGatewayFunction<TReq, TRes> {
     this.event = event;
     this.context = context;
 
-    // TODO 09Mar21: Create an abstraction for correlation ids
-    // const correlationIds = CorrelationIds.get();
-    this.requestId = 'TODO'; // correlationIds.awsRequestId;
-    this.correlationId = 'TODO'; // correlationIds['x-correlation-id'];
+    if (ApiGatewayFunction.getCorrelationIds) {
+      const correlationIds = ApiGatewayFunction.getCorrelationIds();
+      this.requestId = correlationIds.awsRequestId;
+      this.correlationId = correlationIds['x-correlation-id'];
+    }
 
     const request: TReq = this.getRequest(event);
 
