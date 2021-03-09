@@ -1,6 +1,6 @@
 {
   "name": "@andybalham/agb-aws-functions",
-  "version": "2.28.0905",
+  "version": "1.0.0",
   "description": "A set of base classes for creating AWS Lambda functions.",
   "main": "index.js",
   "types": "index.d.ts",
