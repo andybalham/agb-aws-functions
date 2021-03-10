@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/andybalham/agb-aws-functions#readme",
   "devDependencies": {
+    "@aws-cdk/aws-apigateway": "^1.91.0",
     "@aws-cdk/aws-lambda": "^1.91.0",
     "@aws-cdk/aws-logs": "^1.91.0",
     "@aws-cdk/aws-sns": "^1.91.0",
