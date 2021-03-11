@@ -9,7 +9,9 @@
     "lint-and-fix": "eslint ./src --ext .ts --fix",
     "build": "npm run lint && tsc",
     "test": "mocha --require ts-node/register test/**/*.ts",
-    "test-coverage": "nyc npm run test"
+    "test-coverage": "nyc npm run test",
+    "deploy-apigateway": "tsc && cdk deploy ApiGatewayFunctionTest",
+    "synth-apigateway": "tsc && cdk synth ApiGatewayFunctionTest"
   },
   "repository": {
     "type": "git",
@@ -24,13 +26,19 @@
   "devDependencies": {
     "@aws-cdk/aws-apigateway": "1.91.0",
     "@aws-cdk/aws-lambda": "1.91.0",
+    "@aws-cdk/aws-lambda-nodejs": "1.91.0",
     "@aws-cdk/aws-logs": "1.91.0",
     "@aws-cdk/aws-sns": "1.91.0",
     "@aws-cdk/aws-sns-subscriptions": "1.91.0",
     "@aws-cdk/aws-stepfunctions": "1.91.0",
     "@aws-cdk/aws-stepfunctions-tasks": "1.91.0",
     "@aws-cdk/core": "1.91.0",
+    "@dazn/lambda-powertools-correlation-ids": "^1.24.1",
+    "@dazn/lambda-powertools-logger": "^1.24.1",
+    "@dazn/lambda-powertools-middleware-correlation-ids": "^1.24.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@middy/core": "^1.5.2",
+    "@middy/http-error-handler": "^1.5.2",
     "@types/aws-lambda": "^8.10.64",
     "@types/chai": "^4.2.11",
     "@types/http-errors": "^1.8.0",
@@ -41,6 +49,7 @@
     "aws-sdk": "^2.853.0",
     "aws-sdk-mock": "^5.1.0",
     "chai": "^4.2.0",
+    "esbuild": "^0.9.0",
     "eslint": "^7.20.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
     "eslint-config-prettier": "^8.1.0",
