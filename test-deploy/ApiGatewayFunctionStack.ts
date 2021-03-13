@@ -30,9 +30,10 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
     });
 
     const getRequestIntegration = new apigateway.LambdaIntegration(portmanteauFunction);
-    api.root.addMethod('GET', getRequestIntegration, {
+
+    api.root.addResource('query-string-test').addMethod('GET', getRequestIntegration, {
       apiKeyRequired: true,
-    }); // GET /
+    });
 
     new cdk.CfnOutput(this, 'ApiKeyID', {
       value: apiKey.keyId,

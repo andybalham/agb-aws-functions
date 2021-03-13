@@ -17,13 +17,13 @@ const correlationIdParams = { sampleDebugLogRate: 0.01 };
 ApiGatewayFunction.Log = Log;
 ApiGatewayFunction.getCorrelationIds = CorrelationIds.get;
 
-class PortmanteauRequest {
+export class PortmanteauRequest {
   x: string;
 
   y: string;
 }
 
-class PortmanteauResponse {
+export class PortmanteauResponse {
   result: string;
 }
 

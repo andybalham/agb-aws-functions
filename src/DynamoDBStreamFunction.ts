@@ -24,6 +24,8 @@ export default abstract class DynamoDBStreamFunction<T> {
     this.event = event;
     this.context = context;
 
+    // TODO 13Mar21: How should we handle errors from processEventRecordAsync?
+
     // eslint-disable-next-line no-restricted-syntax
     for (const eventRecord of event.Records) {
       //

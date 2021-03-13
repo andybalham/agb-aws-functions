@@ -10,8 +10,9 @@
     "build": "npm run lint && tsc",
     "test": "mocha --require ts-node/register test/**/*.ts",
     "test-coverage": "nyc npm run test",
-    "deploy-apigateway": "tsc && cdk deploy ApiGatewayFunctionTest",
-    "synth-apigateway": "tsc && cdk synth ApiGatewayFunctionTest"
+    "apigateway-synth": "tsc && cdk synth ApiGatewayFunctionTest",
+    "apigateway-deploy": "tsc && cdk deploy ApiGatewayFunctionTest",
+    "apigateway-test-deploy": "mocha --require ts-node/register test-deploy/test/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -48,7 +49,9 @@
     "@typescript-eslint/parser": "^4.15.2",
     "aws-sdk": "^2.853.0",
     "aws-sdk-mock": "^5.1.0",
+    "axios": "^0.21.1",
     "chai": "^4.2.0",
+    "dotenv": "^8.2.0",
     "esbuild": "^0.9.0",
     "eslint": "^7.20.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
