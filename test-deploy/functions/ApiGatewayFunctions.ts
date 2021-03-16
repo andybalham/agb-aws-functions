@@ -17,27 +17,30 @@ const correlationIdParams = { sampleDebugLogRate: 0.01 };
 ApiGatewayFunction.Log = Log;
 ApiGatewayFunction.getCorrelationIds = CorrelationIds.get;
 
-export class PortmanteauRequest {
+export class ParameterTestRequest {
   x: string;
 
   y: string;
 }
 
-export class PortmanteauResponse {
+export class ParameterTestResponse {
   result: string;
 }
 
-class PortmanteauFunction extends ApiGatewayFunction<PortmanteauRequest, PortmanteauResponse> {
-  async handleRequestAsync(request: PortmanteauRequest): Promise<PortmanteauResponse> {
+class ParameterTestFunction extends ApiGatewayFunction<
+  ParameterTestRequest,
+  ParameterTestResponse
+> {
+  async handleRequestAsync(request: ParameterTestRequest): Promise<ParameterTestResponse> {
     return { result: `${request.x}+${request.y}` };
   }
 }
 
-const portmanteauFunction = new PortmanteauFunction();
+const parameterTestFunction = new ParameterTestFunction();
 
-export const portmanteauHandler = middy(
+export const parameterTestHandler = middy(
   async (event: any, context: Context): Promise<any> =>
-    portmanteauFunction.handleAsync(event, context)
+    parameterTestFunction.handleAsync(event, context)
 )
   .use(middyCorrelationIds(correlationIdParams))
   .use(httpErrorHandler());
