@@ -12,7 +12,10 @@
     "test-coverage": "nyc npm run test",
     "apigateway-synth": "tsc && cdk synth ApiGatewayFunctionTest",
     "apigateway-deploy": "tsc && cdk deploy ApiGatewayFunctionTest",
-    "apigateway-test-deploy": "mocha --require ts-node/register test-deploy/test/**/*.ts"
+    "apigateway-test": "mocha --require ts-node/register test-deploy/test/**/ApiGateway*.ts",
+    "sns-synth": "tsc && cdk synth SNSFunctionTest",
+    "sns-deploy": "tsc && cdk deploy SNSFunctionTest",
+    "sns-test": "mocha --require ts-node/register test-deploy/test/**/SNS*.ts"
   },
   "repository": {
     "type": "git",
@@ -25,6 +28,7 @@
   },
   "homepage": "https://github.com/andybalham/agb-aws-functions#readme",
   "devDependencies": {
+    "@andybalham/agb-aws-clients": "^1.0.5",
     "@aws-cdk/aws-apigateway": "1.91.0",
     "@aws-cdk/aws-lambda": "1.91.0",
     "@aws-cdk/aws-lambda-nodejs": "1.91.0",

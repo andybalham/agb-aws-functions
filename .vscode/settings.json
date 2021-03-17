@@ -5,6 +5,7 @@
     "exts",
     "istanbuljs",
     "powertools",
+    "snsfunction",
     "stepfunctions"
   ]
 }
