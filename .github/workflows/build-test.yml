@@ -13,10 +13,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-      # Skip post-install scripts here, as a malicious
-      # script could steal NODE_AUTH_TOKEN.
       - run: npm ci --ignore-scripts
-        env:
-          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
       - run: npm run build
       - run: npm run test-coverage
