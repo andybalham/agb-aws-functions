@@ -14,10 +14,11 @@ jobs:
         with:
           node-version: 12
           registry-url: 'https://registry.npmjs.org'
+          scope: '@andybalham'
       # - run: npm ci
       # Skip post-install scripts here, as a malicious
       # script could steal NODE_AUTH_TOKEN.
-      - run: npm install --ignore-scripts
+      - run: npm ci --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       - run: npm run build
