@@ -14,17 +14,20 @@ export default class TestApi extends cdk.Construct {
     super(scope, `${id}TestApi`);
 
     const api = new apigateway.RestApi(this, `${id}TestApiGateway`, {
-      restApiName: `Test API for ${id}`,
       apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
+      description: `Test API for ${id}`,
     });
 
     this.root = api.root;
 
-    const apiKey = new apigateway.ApiKey(this, `${id}TestApiKey`);
+    const apiKey = new apigateway.ApiKey(this, `${id}TestApiKey`, {
+      description: `${id} Test Api Key`,
+    });
 
     new apigateway.UsagePlan(this, `${id}TestUsagePlan`, {
       apiKey,
       apiStages: [{ stage: api.deploymentStage }],
+      description: `${id} Test Usage Plan`,
     });
 
     new cdk.CfnOutput(this, `${id}TestApiKeyId`, {
