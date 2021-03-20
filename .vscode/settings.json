@@ -4,6 +4,7 @@
     "esbuild",
     "exts",
     "istanbuljs",
+    "npmrc",
     "powertools",
     "snsfunction",
     "stepfunctions"
