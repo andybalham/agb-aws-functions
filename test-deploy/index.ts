@@ -12,5 +12,9 @@ const app = new cdk.App();
 Tags.of(app).add('package', 'agb-aws-functions');
 
 const baseStack = new BaseStack(app, 'FunctionsBaseTest');
+
 new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest');
-new SNSFunctionStack(app, 'SNSFunctionTest', { testBucket: baseStack.testBucket });
+
+new SNSFunctionStack(app, 'SNSFunctionTest', {
+  testBucket: baseStack.testBucket,
+});
