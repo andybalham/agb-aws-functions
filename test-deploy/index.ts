@@ -13,8 +13,11 @@ Tags.of(app).add('package', 'agb-aws-functions');
 
 const baseStack = new BaseStack(app, 'FunctionsBaseTest');
 
-new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest');
+new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {
+  testTable: baseStack.testTable,
+});
 
 new SNSFunctionStack(app, 'SNSFunctionTest', {
   testBucket: baseStack.testBucket,
+  testTable: baseStack.testTable,
 });

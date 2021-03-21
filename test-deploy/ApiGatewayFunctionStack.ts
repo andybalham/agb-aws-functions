@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-new */
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import path from 'path';
-import TestApi from './constructs/TestApi';
+import TestApi from './common/TestApi';
+
+interface ApiGatewayFunctionStackProps extends cdk.StackProps {
+  testTable: dynamodb.Table;
+}
 
 export default class ApiGatewayFunctionStack extends cdk.Stack {
   //
-  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
+  constructor(scope: cdk.App, id: string, props: ApiGatewayFunctionStackProps) {
     //
     super(scope, id, props);
 
@@ -18,7 +23,7 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
       handler: 'parameterTestHandler',
     });
 
-    const testApi = new TestApi(this, 'ApiGatewayFunction');
+    const testApi = new TestApi(this, 'ApiGatewayFunction', { testTable: props.testTable });
 
     const methodOptions = {
       apiKeyRequired: true,

@@ -5,17 +5,19 @@
 /* eslint-disable max-classes-per-file */
 import { Context } from 'aws-lambda/handler';
 import middy from '@middy/core';
-import { S3Client, SNSClient } from '@andybalham/agb-aws-clients';
+import { DynamoDBClient, S3Client, SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import middyCorrelationIds from '@dazn/lambda-powertools-middleware-correlation-ids';
 import log from '@dazn/lambda-powertools-logger';
 import { ApiGatewayFunction, SNSFunction } from '../../src';
+import { TestRunnerFunction } from '../common';
 
 SNSFunction.Log = log;
 ApiGatewayFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const s3Client = new S3Client(process.env.SNS_FUNCTION_BUCKET_NAME);
+const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);
 
 export class TestMessage {
   key: string;
@@ -23,20 +25,29 @@ export class TestMessage {
   body: Record<string, any>;
 }
 
-// Send test message function
+// Test runner function
 
-class SendTestMessageFunction extends ApiGatewayFunction<TestMessage, Record<string, never>> {
-  async handleRequestAsync(request: TestMessage): Promise<Record<string, never>> {
-    await snsClient.publishMessageAsync(request);
-    return {};
+class SNSFunctionTestRunnerFunction extends TestRunnerFunction {
+  //
+  async runTestAsync(testName: string, testInput: Record<string, any>): Promise<void> {
+    //
+    switch (testName) {
+      //
+      case 'handles_message':
+        await snsClient.publishMessageAsync(testInput);
+        break;
+
+      default:
+        throw new Error(`Unhandled testName: ${testName}`);
+    }
   }
 }
 
-const sendTestMessageFunction = new SendTestMessageFunction();
+const snsFunctionTestRunnerFunction = new SNSFunctionTestRunnerFunction(testTableClient);
 
-export const sendTestMessageHandler = middy(
+export const sNSFunctionTestRunnerHandler = middy(
   async (event: any, context: Context): Promise<any> =>
-    sendTestMessageFunction.handleAsync(event, context)
+    snsFunctionTestRunnerFunction.handleAsync(event, context)
 )
   .use(middyCorrelationIds({ sampleDebugLogRate: 1 }))
   .use(httpErrorHandler());

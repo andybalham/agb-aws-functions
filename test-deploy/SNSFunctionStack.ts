@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-new */
+import path from 'path';
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as sns from '@aws-cdk/aws-sns';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as subs from '@aws-cdk/aws-sns-subscriptions';
-import TestApi from './constructs/TestApi';
-import { newTestFunction } from './common';
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
+import { newTestFunction, TestApi } from './common';
 
 interface SNSFunctionStackProps extends cdk.StackProps {
   testBucket: s3.Bucket;
+  testTable: dynamodb.Table;
 }
 
 export default class SNSFunctionStack extends cdk.Stack {
@@ -22,17 +24,35 @@ export default class SNSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      module: 'SNSFunctions',
+      entry: path.join(__dirname, '.', 'functions', `SNSFunctions.ts`),
     });
 
   constructor(scope: cdk.App, id: string, props: SNSFunctionStackProps) {
     //
     super(scope, id, props);
 
-    const testApi = new TestApi(this, 'SNSFunction');
+    const testApi = new TestApi(this, 'SNSFunction', { testTable: props.testTable });
 
     const testTopic = new sns.Topic(this, 'SNSFunctionTopic', {
       displayName: 'SNSFunction test topic',
+    });
+
+    // SnsFunctionTestRunnerFunction
+
+    const snsFunctionTestRunnerFunction = this.newSNSTestFunction({
+      name: 'SNSFunctionTestRunner',
+      environment: {
+        TEST_TABLE_NAME: props.testTable.tableName,
+        SNS_FUNCTION_TOPIC_ARN: testTopic.topicArn,
+      },
+    });
+
+    props.testTable.grantWriteData(snsFunctionTestRunnerFunction);
+    testTopic.grantPublish(snsFunctionTestRunnerFunction);
+
+    testApi.addPostFunction({
+      path: 'run-test',
+      methodFunction: snsFunctionTestRunnerFunction,
     });
 
     // SendTestMessageFunction
