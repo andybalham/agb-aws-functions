@@ -6,7 +6,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
 import TestApi from './TestApi';
 import TestRunnerFunction from './TestRunnerFunction';
-import { TestRunRequest } from './Test';
+import { Test, TestReadRequest, TestRunRequest } from './Test';
 
 const newTestFunction = ({
   scope,
@@ -30,4 +30,4 @@ const newTestFunction = ({
   });
 };
 
-export { newTestFunction, TestApi, TestRunnerFunction, TestRunRequest as TestRequest };
+export { newTestFunction, TestApi, TestRunnerFunction, TestRunRequest, TestReadRequest, Test };

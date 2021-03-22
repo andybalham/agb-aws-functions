@@ -5,13 +5,11 @@ import path from 'path';
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as sns from '@aws-cdk/aws-sns';
-import * as s3 from '@aws-cdk/aws-s3';
 import * as subs from '@aws-cdk/aws-sns-subscriptions';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import { newTestFunction, TestApi } from './common';
 
 interface SNSFunctionStackProps extends cdk.StackProps {
-  testBucket: s3.Bucket;
   testTable: dynamodb.Table;
 }
 
@@ -76,28 +74,11 @@ export default class SNSFunctionStack extends cdk.Stack {
     const receiveTestMessageFunction = this.newSNSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        SNS_FUNCTION_BUCKET_NAME: props.testBucket.bucketName,
+        TEST_TABLE_NAME: props.testTable.tableName,
       },
     });
 
     testTopic.addSubscription(new subs.LambdaSubscription(receiveTestMessageFunction));
-
-    props.testBucket.grantWrite(receiveTestMessageFunction);
-
-    // RetrieveTestMessageFunction
-
-    const retrieveTestMessageFunction = this.newSNSTestFunction({
-      name: 'RetrieveTestMessage',
-      environment: {
-        SNS_FUNCTION_BUCKET_NAME: props.testBucket.bucketName,
-      },
-    });
-
-    props.testBucket.grantRead(retrieveTestMessageFunction);
-
-    testApi.addGetFunction({
-      path: 'retrieve-message',
-      methodFunction: retrieveTestMessageFunction,
-    });
+    props.testTable.grantReadWriteData(receiveTestMessageFunction);
   }
 }

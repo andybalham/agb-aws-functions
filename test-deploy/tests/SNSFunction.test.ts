@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-console */
@@ -5,75 +6,109 @@ import axios from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import { nanoid } from 'nanoid';
-import { TestRequest } from '../common';
+import { TestReadRequest, TestRunRequest } from '../common';
 import { TestMessage } from '../functions/SNSFunctions';
 
 dotenv.config();
+
+async function runTestAsync({
+  testStack,
+  testName,
+  testInput,
+  expectedOutput,
+  timeoutSeconds,
+  axiosConfig,
+}: {
+  testStack: string;
+  testName: string;
+  testInput: TestMessage;
+  expectedOutput: { value: string };
+  timeoutSeconds: number;
+  axiosConfig: { baseURL: string | undefined; headers: { 'x-api-key': string | undefined } };
+}): Promise<TestReadRequest> {
+  //
+  const testRunRequest: TestRunRequest = {
+    testStack,
+    testName,
+    testInput,
+    expectedOutput,
+    timeoutSeconds,
+  };
+
+  const runTestResponse = await axios.post('run-test', testRunRequest, axiosConfig);
+
+  if (runTestResponse.status !== 200) {
+    throw new Error(`Unexpected runTestResponse.status: ${runTestResponse.status}`);
+  }
+
+  return testRunRequest;
+}
 
 async function waitAsync(waitSeconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
 }
 
-describe('SNSFunction integration tests', () => {
+async function pollTestResultAsync(
+  testReadRequest: TestReadRequest,
+  axiosConfig: { baseURL: string | undefined; headers: { 'x-api-key': string | undefined } }
+): Promise<boolean> {
   //
-  const axiosConfig = {
-    baseURL: process.env.SNS_FUNCTION_BASE_URL,
-    headers: {
-      'x-api-key': process.env.SNS_FUNCTION_API_KEY,
-    },
-  };
+  let testTimedOut = false;
+  let testSucceeded = false;
 
-  it('receives message', async () => {
+  while (!testTimedOut && !testSucceeded) {
     //
-    const testMessage: TestMessage = {
-      key: nanoid(10),
-      body: { myNumber: 666 },
-    };
+    await waitAsync(1);
 
-    // TODO 21Mar21: Do we have a single function for all tests?
-
-    // const sendResponse = await axios.post('send-message', testMessage, axiosConfig);
-
-    const testRequest: TestRequest = {
-      testStack: 'SNSFunction',
-      testName: 'handles_message',
-      testInput: testMessage,
-      expectedOutput: testMessage,
-      timeoutSeconds: 3,
-    };
-
-    const sendResponse = await axios.post('run-test', testRequest, axiosConfig);
-
-    expect(sendResponse.status).to.equal(200);
-
-    let testTimedOut = false;
-    let testSucceeded = false;
-
-    while (!testTimedOut && !testSucceeded) {
-      // eslint-disable-next-line no-await-in-loop
-      await waitAsync(1);
-
-      // eslint-disable-next-line no-await-in-loop
-      const readTestResponse = await axios.get(
-        `test/${testRequest.testStack}/${testRequest.testName}`,
-        axiosConfig
-      );
-
-      testTimedOut = Date.now() > readTestResponse.data.timeoutTime;
-
-      testSucceeded =
-        JSON.stringify(readTestResponse.data.actualOutput) ===
-        JSON.stringify(readTestResponse.data.expectedOutput);
-    }
-
-    const retrieveResponse = await axios.get(
-      `retrieve-message?key=${testMessage.key}`,
+    const readTestResponse = await axios.get(
+      `test/${testReadRequest.testStack}/${testReadRequest.testName}`,
       axiosConfig
     );
 
-    expect(retrieveResponse.status).to.equal(200);
+    if (readTestResponse.status !== 200) {
+      throw new Error(`Unexpected readTestResponse.status: ${readTestResponse.status}`);
+    }
 
-    expect(retrieveResponse.data).to.deep.equal(testMessage.body);
+    testTimedOut = Date.now() > readTestResponse.data.timeoutTime;
+
+    const actualOutputJson = JSON.stringify(readTestResponse.data.actualOutput);
+    const expectedOutputJson = JSON.stringify(readTestResponse.data.expectedOutput);
+
+    testSucceeded = actualOutputJson === expectedOutputJson;
+  }
+
+  return testSucceeded;
+}
+
+const testStack = 'SNSFunction';
+
+const axiosConfig = {
+  baseURL: process.env.SNS_FUNCTION_BASE_URL,
+  headers: {
+    'x-api-key': process.env.SNS_FUNCTION_API_KEY,
+  },
+};
+
+describe('SNSFunction integration tests', () => {
+  //
+  it('receives message', async () => {
+    //
+    const testInput: TestMessage = {
+      value: nanoid(10),
+    };
+
+    const testReadRequest = await runTestAsync({
+      testStack,
+      testName: 'handles_message',
+      testInput,
+      expectedOutput: { ...testInput },
+      timeoutSeconds: 3,
+      axiosConfig,
+    });
+
+    const testSucceeded = await pollTestResultAsync(testReadRequest, axiosConfig);
+
+    expect(testSucceeded).to.be.true;
   });
 
   it('handles exception', async () => {

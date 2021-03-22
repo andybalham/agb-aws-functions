@@ -18,6 +18,5 @@ new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {
 });
 
 new SNSFunctionStack(app, 'SNSFunctionTest', {
-  testBucket: baseStack.testBucket,
   testTable: baseStack.testTable,
 });
