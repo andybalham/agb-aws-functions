@@ -9,7 +9,7 @@ import { DynamoDBClient, SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import { ApiGatewayFunction, SNSFunction } from '../../src';
-import { Test, TestReadRequest, TestRunnerFunction } from '../common';
+import { TestState, TestReadRequest, TestRunnerFunction } from '../common';
 
 SNSFunction.Log = log;
 ApiGatewayFunction.Log = log;
@@ -18,6 +18,8 @@ const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);
 
 export class TestMessage {
+  testName: string;
+
   value: string;
 }
 
@@ -30,6 +32,7 @@ class SNSFunctionTestRunnerFunction extends TestRunnerFunction {
     switch (testName) {
       //
       case 'handles_message':
+      case 'throw_error':
         await snsClient.publishMessageAsync(testInput);
         break;
 
@@ -49,20 +52,49 @@ export const sNSFunctionTestRunnerHandler = middy(
 // Receive test message function
 
 class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
+  //
+  constructor() {
+    super({
+      errorHandlerAsync: async (error): Promise<void> => {
+        //
+        const testReadRequest: TestReadRequest = {
+          testStack: 'SNSFunction',
+          testName: 'throw_error',
+        };
+
+        await this.updateTestStateAsync(testReadRequest, error.message);
+      },
+    });
+  }
+
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
+    // eslint-disable-next-line default-case
+    switch (message.testName) {
+      case 'throw_error':
+        throw new Error(`Test error: ${message.value}`);
+    }
+
     const testReadRequest: TestReadRequest = {
       testStack: 'SNSFunction',
       testName: 'handles_message',
     };
 
-    const test = await testTableClient.getAsync<Test>(testReadRequest);
+    await this.updateTestStateAsync(testReadRequest, message);
+  }
 
-    if (!test) {
+  private async updateTestStateAsync(
+    testReadRequest: TestReadRequest,
+    actualOutput: any
+  ): Promise<void> {
+    //
+    const testState = await testTableClient.getAsync<TestState>(testReadRequest);
+
+    if (!testState) {
       throw new Error(`Could locate the test state for ${JSON.stringify(testReadRequest)}`);
     }
 
-    await testTableClient.putAsync({ ...test, actualOutput: message });
+    await testTableClient.putAsync({ ...testState, actualOutput });
   }
 }
 

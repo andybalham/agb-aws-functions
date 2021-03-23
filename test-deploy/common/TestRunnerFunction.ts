@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { DynamoDBClient } from '@andybalham/agb-aws-clients';
 import { ApiGatewayFunction } from '../../src';
-import { Test, TestRunRequest } from './Test';
+import { TestState, TestRunRequest } from './TestState';
 
 export default abstract class TestRunnerFunction extends ApiGatewayFunction<TestRunRequest, void> {
   //
@@ -14,7 +14,7 @@ export default abstract class TestRunnerFunction extends ApiGatewayFunction<Test
     const startTime = Date.now();
     const timeoutTime = startTime + request.timeoutSeconds * 1000;
 
-    const test: Test = {
+    const test: TestState = {
       ...request,
       startTime,
       timeoutTime,

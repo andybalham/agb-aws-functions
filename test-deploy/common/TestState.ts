@@ -20,4 +20,4 @@ export interface TestReadResponse {
   actualOutput?: Record<string, any>;
 }
 
-export interface Test extends TestRunRequest, TestReadResponse {}
+export interface TestState extends TestRunRequest, TestReadResponse {}

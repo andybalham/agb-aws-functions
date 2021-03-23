@@ -19,7 +19,7 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
     super(scope, id, props);
 
     const parameterTestFunction = new lambda.NodejsFunction(this, 'ParameterTestFunction', {
-      entry: path.join(__dirname, '.', 'functions', 'ApiGatewayFunctions.ts'),
+      entry: path.join(__dirname, '.', 'functions', 'ApiGatewayTestFunctions.ts'),
       handler: 'parameterTestHandler',
     });
 

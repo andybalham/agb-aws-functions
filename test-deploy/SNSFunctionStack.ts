@@ -22,7 +22,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      entry: path.join(__dirname, '.', 'functions', `SNSFunctions.ts`),
+      entry: path.join(__dirname, '.', 'functions', `SNSTestFunctions.ts`),
     });
 
   constructor(scope: cdk.App, id: string, props: SNSFunctionStackProps) {
@@ -51,22 +51,6 @@ export default class SNSFunctionStack extends cdk.Stack {
     testApi.addPostFunction({
       path: 'run-test',
       methodFunction: snsFunctionTestRunnerFunction,
-    });
-
-    // SendTestMessageFunction
-
-    const sendTestMessageFunction = this.newSNSTestFunction({
-      name: 'SendTestMessage',
-      environment: {
-        SNS_FUNCTION_TOPIC_ARN: testTopic.topicArn,
-      },
-    });
-
-    testTopic.grantPublish(sendTestMessageFunction);
-
-    testApi.addPostFunction({
-      path: 'send-message',
-      methodFunction: sendTestMessageFunction,
     });
 
     // ReceiveTestMessageFunction

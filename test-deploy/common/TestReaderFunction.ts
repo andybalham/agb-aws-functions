@@ -2,7 +2,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { DynamoDBClient } from '@andybalham/agb-aws-clients';
 import { Context } from 'aws-lambda/handler';
-import { TestReadRequest, TestReadResponse } from './Test';
+import { TestReadRequest, TestReadResponse } from './TestState';
 import { ApiGatewayFunction } from '../../src';
 
 class TestReaderFunction extends ApiGatewayFunction<TestReadRequest, TestReadResponse | undefined> {
