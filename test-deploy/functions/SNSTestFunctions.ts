@@ -44,7 +44,7 @@ class SNSFunctionTestRunnerFunction extends TestRunnerFunction {
 
 const snsFunctionTestRunnerFunction = new SNSFunctionTestRunnerFunction(testTableClient);
 
-export const sNSFunctionTestRunnerHandler = middy(
+export const snsFunctionTestRunnerHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     snsFunctionTestRunnerFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
@@ -53,20 +53,6 @@ export const sNSFunctionTestRunnerHandler = middy(
 
 class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
   //
-  constructor() {
-    super({
-      errorHandlerAsync: async (error): Promise<void> => {
-        //
-        const testReadRequest: TestReadRequest = {
-          testStack: 'SNSFunction',
-          testName: 'throw_error',
-        };
-
-        await this.updateTestStateAsync(testReadRequest, error.message);
-      },
-    });
-  }
-
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
     // eslint-disable-next-line default-case
@@ -81,6 +67,16 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     };
 
     await this.updateTestStateAsync(testReadRequest, message);
+  }
+
+  protected async handleErrorAsync(error: any): Promise<void> {
+    //
+    const testReadRequest: TestReadRequest = {
+      testStack: 'SNSFunction',
+      testName: 'throw_error',
+    };
+
+    await this.updateTestStateAsync(testReadRequest, error.message);
   }
 
   private async updateTestStateAsync(

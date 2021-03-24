@@ -23,7 +23,9 @@ const newTestFunction = ({
 }): lambda.Function => {
   //
   const id = `${name}Function`;
-  const handler = `${name.slice(0, 1).toLowerCase() + name.slice(1)}Handler`;
+  const handler = `${name.replace(/^([A-Z]+(?=[A-Z])|[A-Z][a-z])/, (match: string) =>
+    match.toLowerCase()
+  )}Handler`;
 
   return new lambdaNodejs.NodejsFunction(scope, id, {
     entry,
