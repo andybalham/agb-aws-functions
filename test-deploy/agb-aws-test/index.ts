@@ -6,9 +6,10 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
 import axios from 'axios';
-import TestApi from './TestApi';
+import TestRestApi from './TestRestApi';
 import TestRunnerFunction from './TestRunnerFunction';
 import { TestState, TestReadRequest, TestRunRequest } from './TestState';
+import TestStateDynamoDBTable from './TestStateDynamoDBTable';
 
 const newTestFunction = ({
   scope,
@@ -108,9 +109,10 @@ export {
   runTestAsync,
   pollTestStateAsync,
   waitAsync,
-  TestApi,
+  TestRestApi,
   TestRunnerFunction,
   TestRunRequest,
   TestReadRequest,
   TestState,
+  TestStateDynamoDBTable,
 };

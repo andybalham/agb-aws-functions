@@ -10,9 +10,10 @@ import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
 
 export interface TestApiProps {
   testTable: dynamodb.Table;
+  testApiKeyValue?: string;
 }
 
-export default class TestApi extends cdk.Construct {
+export default class TestRestApi extends cdk.Construct {
   //
   readonly root: IResource;
 
@@ -27,14 +28,21 @@ export default class TestApi extends cdk.Construct {
 
     this.root = api.root;
 
-    // TODO 21Mar21: Could we just add an API key like the following?
-    // const apiKey = api.addApiKey(`${id}TestApiKey`, {
-    //   description: `${id} Test Api Key`,
-    // });
+    const apiKeyValue = props.testApiKeyValue;
 
-    const apiKey = new apigateway.ApiKey(this, `${id}TestApiKey`, {
-      description: `${id} Test Api Key`,
+    const apiKey = api.addApiKey(`${id}TestApiKey`, {
+      value: apiKeyValue,
     });
+
+    if (apiKeyValue) {
+      new cdk.CfnOutput(this, `${id}TestApiKey`, {
+        value: apiKeyValue,
+      });
+    } else {
+      new cdk.CfnOutput(this, `${id}TestApiKeyId`, {
+        value: apiKey.keyId,
+      });
+    }
 
     new apigateway.UsagePlan(this, `${id}TestUsagePlan`, {
       apiKey,
@@ -47,8 +55,8 @@ export default class TestApi extends cdk.Construct {
     });
 
     const testReaderFunction = new lambdaNodejs.NodejsFunction(scope, id, {
-      entry: path.join(__dirname, '.', `TestReaderFunction.ts`),
-      handler: 'testReaderHandler',
+      entry: path.join(__dirname, '.', `TestStateReaderFunction.ts`),
+      handler: 'testStateReaderHandler',
       environment: {
         TEST_TABLE_NAME: props.testTable.tableName,
       },
@@ -59,10 +67,6 @@ export default class TestApi extends cdk.Construct {
     this.addGetFunction({
       path: 'test/{testStack}/{testName}',
       methodFunction: testReaderFunction,
-    });
-
-    new cdk.CfnOutput(this, `${id}TestApiKeyId`, {
-      value: apiKey.keyId,
     });
   }
 

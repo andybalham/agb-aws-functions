@@ -6,7 +6,10 @@ import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import path from 'path';
-import TestApi from './common/TestApi';
+import dotenv from 'dotenv';
+import TestRestApi from './agb-aws-test/TestRestApi';
+
+dotenv.config();
 
 interface ApiGatewayFunctionStackProps extends cdk.StackProps {
   testTable: dynamodb.Table;
@@ -19,11 +22,14 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
     super(scope, id, props);
 
     const parameterTestFunction = new lambda.NodejsFunction(this, 'ParameterTestFunction', {
-      entry: path.join(__dirname, '.', 'functions', 'ApiGatewayTestFunctions.ts'),
+      entry: path.join(__dirname, '.', 'functions', 'ApiGatewayTest.fn.ts'),
       handler: 'parameterTestHandler',
     });
 
-    const testApi = new TestApi(this, 'ApiGatewayFunction', { testTable: props.testTable });
+    const testApi = new TestRestApi(this, 'ApiGatewayFunction', {
+      testTable: props.testTable,
+      testApiKeyValue: process.env.API_GATEWAY_FUNCTION_API_KEY,
+    });
 
     const methodOptions = {
       apiKeyRequired: true,

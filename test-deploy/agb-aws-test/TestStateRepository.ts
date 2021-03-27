@@ -1,9 +1,10 @@
 /* eslint-disable no-new */
 /* eslint-disable import/no-extraneous-dependencies */
+// eslint-disable-next-line max-classes-per-file
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 
-export default class TestRepository extends cdk.Construct {
+export default class TestStateRepositoryConstruct extends cdk.Construct {
   //
   readonly table: dynamodb.Table;
 

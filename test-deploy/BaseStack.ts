@@ -3,7 +3,7 @@
 /* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
-import TestRepository from './common/TestRepository';
+import { TestStateDynamoDBTable } from './agb-aws-test';
 
 export default class BaseStack extends cdk.Stack {
   //
@@ -13,8 +13,6 @@ export default class BaseStack extends cdk.Stack {
     //
     super(scope, id, props);
 
-    const testRepository = new TestRepository(this, 'AwsFunctions');
-
-    this.testTable = testRepository.table;
+    this.testTable = new TestStateDynamoDBTable(this, 'AwsFunctions');
   }
 }

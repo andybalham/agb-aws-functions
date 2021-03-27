@@ -5,7 +5,10 @@ import { Context } from 'aws-lambda/handler';
 import { TestReadRequest, TestReadResponse } from './TestState';
 import { ApiGatewayFunction } from '../../src';
 
-class TestReaderFunction extends ApiGatewayFunction<TestReadRequest, TestReadResponse | undefined> {
+class TestStateReaderFunction extends ApiGatewayFunction<
+  TestReadRequest,
+  TestReadResponse | undefined
+> {
   //
   constructor(private testTableClient: DynamoDBClient) {
     super();
@@ -16,8 +19,10 @@ class TestReaderFunction extends ApiGatewayFunction<TestReadRequest, TestReadRes
   }
 }
 
-const testReaderFunction = new TestReaderFunction(new DynamoDBClient(process.env.TEST_TABLE_NAME));
+const testReaderFunction = new TestStateReaderFunction(
+  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+);
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export const testReaderHandler = async (event: any, context: Context): Promise<any> =>
+export const testStateReaderHandler = async (event: any, context: Context): Promise<any> =>
   testReaderFunction.handleAsync(event, context);

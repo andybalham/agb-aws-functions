@@ -5,8 +5,8 @@
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import { nanoid } from 'nanoid';
-import { pollTestStateAsync, runTestAsync } from '../common';
-import { TestMessage } from '../functions/SNSTestFunctions';
+import { pollTestStateAsync, runTestAsync } from '../agb-aws-test';
+import { TestMessage } from '../functions/SNSFunctionTest.fn';
 
 dotenv.config();
 
@@ -15,7 +15,7 @@ const testStack = 'SNSFunction';
 const testApiConfig = {
   baseURL: process.env.SNS_FUNCTION_BASE_URL,
   headers: {
-    'x-api-key': process.env.SNS_FUNCTION_API_KEY,
+    'x-api-key': process.env.TEST_API_KEY,
   },
 };
 

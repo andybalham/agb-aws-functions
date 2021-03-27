@@ -7,7 +7,10 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as sns from '@aws-cdk/aws-sns';
 import * as subs from '@aws-cdk/aws-sns-subscriptions';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
-import { newTestFunction, TestApi } from './common';
+import dotenv from 'dotenv';
+import { newTestFunction, TestRestApi } from './agb-aws-test';
+
+dotenv.config();
 
 interface SNSFunctionStackProps extends cdk.StackProps {
   testTable: dynamodb.Table;
@@ -22,14 +25,17 @@ export default class SNSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      entry: path.join(__dirname, '.', 'functions', `SNSTestFunctions.ts`),
+      entry: path.join(__dirname, '.', 'functions', `SNSFunctionTest.fn.ts`),
     });
 
   constructor(scope: cdk.App, id: string, props: SNSFunctionStackProps) {
     //
     super(scope, id, props);
 
-    const testApi = new TestApi(this, 'SNSFunction', { testTable: props.testTable });
+    const testApi = new TestRestApi(this, 'SNSFunction', {
+      testTable: props.testTable,
+      testApiKeyValue: process.env.TEST_API_KEY,
+    });
 
     const testTopic = new sns.Topic(this, 'SNSFunctionTopic', {
       displayName: 'SNSFunction test topic',
