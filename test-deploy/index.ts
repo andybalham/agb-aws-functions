@@ -4,19 +4,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as cdk from '@aws-cdk/core';
 import { Tags } from '@aws-cdk/core';
-import ApiGatewayFunctionStack from './ApiGatewayFunctionStack';
-import BaseStack from './BaseStack';
-import SNSFunctionStack from './SNSFunctionStack';
+import ApiGatewayFunctionStack from './apigateway-function/ApiGatewayFunction.test-stack';
+import SNSFunctionStack from './sns-function/SNSFunction.test-stack';
 
 const app = new cdk.App();
 Tags.of(app).add('package', 'agb-aws-functions');
 
-const baseStack = new BaseStack(app, 'FunctionsBaseTest');
+new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {});
 
-new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {
-  testTable: baseStack.testTable,
-});
-
-new SNSFunctionStack(app, 'SNSFunctionTest', {
-  testTable: baseStack.testTable,
-});
+new SNSFunctionStack(app, 'SNSFunctionTest', {});

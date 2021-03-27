@@ -6,15 +6,12 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as sns from '@aws-cdk/aws-sns';
 import * as subs from '@aws-cdk/aws-sns-subscriptions';
-import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import dotenv from 'dotenv';
-import { newTestFunction, TestRestApi } from './agb-aws-test';
+import { newTestFunction, TestRestApi } from '../agb-aws-test-deploy';
 
 dotenv.config();
 
-interface SNSFunctionStackProps extends cdk.StackProps {
-  testTable: dynamodb.Table;
-}
+type SNSFunctionStackProps = cdk.StackProps;
 
 export default class SNSFunctionStack extends cdk.Stack {
   //
@@ -25,7 +22,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      entry: path.join(__dirname, '.', 'functions', `SNSFunctionTest.fn.ts`),
+      entry: path.join(__dirname, '.', `SNSFunction.test-fn.ts`),
     });
 
   constructor(scope: cdk.App, id: string, props: SNSFunctionStackProps) {
@@ -33,7 +30,6 @@ export default class SNSFunctionStack extends cdk.Stack {
     super(scope, id, props);
 
     const testApi = new TestRestApi(this, 'SNSFunction', {
-      testTable: props.testTable,
       testApiKeyValue: process.env.SNS_FUNCTION_API_KEY,
     });
 
@@ -46,12 +42,12 @@ export default class SNSFunctionStack extends cdk.Stack {
     const snsFunctionTestRunnerFunction = this.newSNSTestFunction({
       name: 'SNSFunctionTestRunner',
       environment: {
-        TEST_TABLE_NAME: props.testTable.tableName,
+        TEST_TABLE_NAME: testApi.testTable.tableName,
         SNS_FUNCTION_TOPIC_ARN: testTopic.topicArn,
       },
     });
 
-    props.testTable.grantWriteData(snsFunctionTestRunnerFunction);
+    testApi.testTable.grantWriteData(snsFunctionTestRunnerFunction);
     testTopic.grantPublish(snsFunctionTestRunnerFunction);
 
     testApi.addPostFunction({
@@ -64,11 +60,11 @@ export default class SNSFunctionStack extends cdk.Stack {
     const receiveTestMessageFunction = this.newSNSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        TEST_TABLE_NAME: props.testTable.tableName,
+        TEST_TABLE_NAME: testApi.testTable.tableName,
       },
     });
 
     testTopic.addSubscription(new subs.LambdaSubscription(receiveTestMessageFunction));
-    props.testTable.grantReadWriteData(receiveTestMessageFunction);
+    testApi.testTable.grantReadWriteData(receiveTestMessageFunction);
   }
 }

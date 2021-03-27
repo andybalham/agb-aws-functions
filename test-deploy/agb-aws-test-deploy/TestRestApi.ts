@@ -3,19 +3,20 @@
 import path from 'path';
 import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
-import { IResource } from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda';
-import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
+import TestStateDynamoDBTable from './TestStateDynamoDBTable';
 
 export interface TestApiProps {
-  testTable: dynamodb.Table;
   testApiKeyValue?: string;
 }
 
 export default class TestRestApi extends cdk.Construct {
   //
-  readonly root: IResource;
+  readonly apiRoot: apigateway.IResource;
+
+  readonly testTable: dynamodb.Table;
 
   constructor(scope: cdk.Construct, id: string, props: TestApiProps) {
     //
@@ -26,7 +27,7 @@ export default class TestRestApi extends cdk.Construct {
       description: `Test API for ${id}`,
     });
 
-    this.root = api.root;
+    this.apiRoot = api.root;
 
     const apiKeyValue = props.testApiKeyValue;
 
@@ -54,15 +55,17 @@ export default class TestRestApi extends cdk.Construct {
       description: `${id} Test Usage Plan`,
     });
 
+    this.testTable = new TestStateDynamoDBTable(this, id);
+
     const testReaderFunction = new lambdaNodejs.NodejsFunction(scope, id, {
       entry: path.join(__dirname, '.', `TestStateReaderFunction.ts`),
       handler: 'testStateReaderHandler',
       environment: {
-        TEST_TABLE_NAME: props.testTable.tableName,
+        TEST_TABLE_NAME: this.testTable.tableName,
       },
     });
 
-    props.testTable.grantReadData(testReaderFunction);
+    this.testTable.grantReadData(testReaderFunction);
 
     this.addGetFunction({
       path: 'test/{testStack}/{testName}',
@@ -105,7 +108,7 @@ export default class TestRestApi extends cdk.Construct {
     const functionResource = pathParts.reduce(
       (resource: apigateway.IResource, pathPart: string) =>
         resource.getResource(pathPart) ?? resource.addResource(pathPart),
-      this.root
+      this.apiRoot
     );
 
     return functionResource.addMethod(

@@ -4,7 +4,7 @@
 import axios from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
-import { ParameterTestRequest, ParameterTestResponse } from '../functions/ApiGatewayTest.fn';
+import { ParameterTestRequest, ParameterTestResponse } from './ApiGatewayFunction.test-fn';
 
 dotenv.config();
 

@@ -5,8 +5,8 @@
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import { nanoid } from 'nanoid';
-import { pollTestStateAsync, runTestAsync } from '../agb-aws-test';
-import { TestMessage } from '../functions/SNSFunctionTest.fn';
+import { pollTestStateAsync, runTestAsync } from '../agb-aws-test-deploy';
+import { TestMessage } from './SNSFunction.test-fn';
 
 dotenv.config();
 
