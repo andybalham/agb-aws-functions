@@ -34,7 +34,7 @@ export default class SNSFunctionStack extends cdk.Stack {
 
     const testApi = new TestRestApi(this, 'SNSFunction', {
       testTable: props.testTable,
-      testApiKeyValue: process.env.TEST_API_KEY,
+      testApiKeyValue: process.env.SNS_FUNCTION_API_KEY,
     });
 
     const testTopic = new sns.Topic(this, 'SNSFunctionTopic', {

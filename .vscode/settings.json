@@ -8,5 +8,8 @@
     "powertools",
     "snsfunction",
     "stepfunctions"
+  ],
+  "cSpell.ignoreWords": [
+    "cbnm"
   ]
 }
