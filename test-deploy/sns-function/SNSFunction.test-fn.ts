@@ -9,7 +9,7 @@ import { DynamoDBClient, SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import { ApiGatewayFunction, SNSFunction } from '../../src';
-import { TestState, TestReadRequest, TestRunnerFunction } from '../agb-aws-test-deploy';
+import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
 
 SNSFunction.Log = log;
 ApiGatewayFunction.Log = log;

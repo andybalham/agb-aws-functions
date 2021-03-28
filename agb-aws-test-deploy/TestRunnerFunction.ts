@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { DynamoDBClient } from '@andybalham/agb-aws-clients';
-import { ApiGatewayFunction } from '../../src';
+import { ApiGatewayFunction } from '../src';
 import { TestState, TestRunRequest } from './TestState';
 
 export default abstract class TestRunnerFunction extends ApiGatewayFunction<TestRunRequest, void> {

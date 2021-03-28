@@ -3,7 +3,7 @@
 import { DynamoDBClient } from '@andybalham/agb-aws-clients';
 import { Context } from 'aws-lambda/handler';
 import { TestReadRequest, TestReadResponse } from './TestState';
-import { ApiGatewayFunction } from '../../src';
+import { ApiGatewayFunction } from '../src';
 
 class TestStateReaderFunction extends ApiGatewayFunction<
   TestReadRequest,

@@ -60,6 +60,7 @@
   "include": [
     "src/**/*",
     "test/**/*",
-    "test-deploy/**/*"
+    "test-deploy/**/*", 
+    "agb-aws-test-deploy"
   ]
 }
