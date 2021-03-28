@@ -34,6 +34,8 @@ export default abstract class SQSFunction<T> {
         break;
       }
 
+      // TODO 28Mar21: Add some optional error handling
+
       // eslint-disable-next-line no-await-in-loop
       await this.handleMessageAsync(message);
     }
