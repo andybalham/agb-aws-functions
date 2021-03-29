@@ -14,7 +14,7 @@ import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-te
 SQSFunction.Log = log;
 ApiGatewayFunction.Log = log;
 
-const sqsClient = new SQSClient(process.env.SQS_FUNCTION_TOPIC_ARN);
+const sqsClient = new SQSClient(process.env.SQS_FUNCTION_QUEUE_URL);
 const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);
 
 export class TestMessage {

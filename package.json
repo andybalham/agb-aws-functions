@@ -15,7 +15,10 @@
     "apigateway-test": "mocha --require ts-node/register test-deploy/test/**/ApiGateway*.ts",
     "sns-synth": "tsc && cdk synth SNSFunctionTest",
     "sns-deploy": "tsc && cdk deploy SNSFunctionTest",
-    "sns-test": "mocha --require ts-node/register test-deploy/test/**/SNS*.ts"
+    "sns-test": "mocha --require ts-node/register test-deploy/test/**/SNS*.ts",
+    "sqs-synth": "tsc && cdk synth SQSFunctionTest",
+    "sqs-deploy": "tsc && cdk deploy SQSFunctionTest",
+    "sqs-test": "mocha --require ts-node/register test-deploy/test/**/SQS*.ts"
   },
   "repository": {
     "type": "git",
@@ -31,6 +34,7 @@
     "@andybalham/agb-aws-clients": "^1.0.6",
     "@aws-cdk/aws-apigateway": "1.91.0",
     "@aws-cdk/aws-lambda": "1.91.0",
+    "@aws-cdk/aws-lambda-event-sources": "1.91.0",
     "@aws-cdk/aws-lambda-nodejs": "1.91.0",
     "@aws-cdk/aws-logs": "1.91.0",
     "@aws-cdk/aws-sns": "1.91.0",
