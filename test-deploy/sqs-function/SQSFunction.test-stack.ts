@@ -35,10 +35,16 @@ export default class SQSFunctionStack extends cdk.Stack {
       testApiKeyValue: process.env.SQS_FUNCTION_API_KEY,
     });
 
+    const testDLQ = new sqs.Queue(this, 'SQSFunctionDLQ', {
+      receiveMessageWaitTime: cdk.Duration.seconds(20),
+    });
+
     const testQueue = new sqs.Queue(this, 'SQSFunctionQueue', {
       receiveMessageWaitTime: cdk.Duration.seconds(20),
-      // TODO 29Mar21: Add a DLQ
-      // deadLetterQueue
+      deadLetterQueue: {
+        maxReceiveCount: 1,
+        queue: testDLQ,
+      },
     });
 
     // SQSFunctionTestRunnerFunction

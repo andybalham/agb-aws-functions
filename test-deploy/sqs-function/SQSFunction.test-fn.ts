@@ -8,6 +8,7 @@ import middy from '@middy/core';
 import { DynamoDBClient, SQSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
+import sqsBatch from '@middy/sqs-partial-batch-failure';
 import { ApiGatewayFunction, SQSFunction } from '../../src';
 import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
 
@@ -27,17 +28,28 @@ export class TestMessage {
 
 class SQSFunctionTestRunnerFunction extends TestRunnerFunction {
   //
-  async runTestAsync(testName: string, testInput: Record<string, any>): Promise<void> {
+  async runTestAsync(scenarioId: string): Promise<void> {
     //
-    switch (testName) {
+    switch (scenarioId) {
       //
       case 'handles_message':
       case 'throw_error':
-        await sqsClient.sendMessageAsync(testInput);
+        await sqsClient.sendMessageAsync({ scenarioId });
+        break;
+
+      case 'handles_batch':
+      case 'handles_batch_with_error':
+        {
+          const sendMessagePromises = Array.from(Array(10).keys()).map((index) =>
+            sqsClient.sendMessageAsync({ scenarioId, value: index.toString() })
+          );
+
+          await Promise.all(sendMessagePromises);
+        }
         break;
 
       default:
-        throw new Error(`Unhandled testName: ${testName}`);
+        throw new Error(`Unhandled testName: ${scenarioId}`);
     }
   }
 }
@@ -69,16 +81,6 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
     await this.updateTestStateAsync(testReadRequest, message);
   }
 
-  protected async handleErrorAsync(error: any): Promise<void> {
-    //
-    const testReadRequest: TestReadRequest = {
-      testStack: 'SQSFunction',
-      testName: 'throw_error',
-    };
-
-    await this.updateTestStateAsync(testReadRequest, error.message);
-  }
-
   private async updateTestStateAsync(
     testReadRequest: TestReadRequest,
     actualOutput: any
@@ -99,4 +101,4 @@ const receiveTestMessageFunction = new ReceiveTestMessageFunction();
 export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     receiveTestMessageFunction.handleAsync(event, context)
-);
+).use(sqsBatch());

@@ -4,39 +4,26 @@
 /* eslint-disable class-methods-use-this */
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
-import { SNSEvent, SNSEventRecord } from 'aws-lambda/trigger/sns';
-import { Context } from 'aws-lambda/handler';
-import FunctionLog from './FunctionLog';
+import { SNSEvent } from 'aws-lambda/trigger/sns';
+import BaseFunction from './BaseFunction';
 
 export interface SNSFunctionProps {
   handleError?: boolean;
 }
 
-export default abstract class SNSFunction<T> {
+export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, void> {
   //
-  static Log: FunctionLog | undefined;
-
   props: SNSFunctionProps = {
     handleError: true,
   };
 
-  event: SNSEvent;
-
-  context: Context;
-
   constructor(props?: SNSFunctionProps) {
+    super();
     this.props = { ...this.props, ...props };
   }
 
-  async handleAsync(event: SNSEvent, context: Context): Promise<void> {
+  protected async handleInternalAsync(event: SNSEvent): Promise<void> {
     //
-    if (SNSFunction.Log?.debug) SNSFunction.Log.debug('Handling SNSEvent', { event });
-
-    context.callbackWaitsForEmptyEventLoop = false;
-
-    this.event = event;
-    this.context = context;
-
     // eslint-disable-next-line no-restricted-syntax
     for (const eventRecord of event.Records) {
       //
@@ -56,27 +43,17 @@ export default abstract class SNSFunction<T> {
           await this.handleMessageAsync(message);
           //
         } catch (error) {
-          //
-          this.logError('Error handling event record', eventRecord, error);
+          this.logError('Error handling event record', { eventRecord }, error);
 
           try {
             await this.handleErrorAsync(error, message);
           } catch (errorHandlingError) {
-            this.logError('Error handling event record', eventRecord, errorHandlingError);
+            this.logError('Error handling event record error', { eventRecord }, errorHandlingError);
           }
         }
       } else {
         await this.handleMessageAsync(message);
       }
-    }
-  }
-
-  private logError(message: string, eventRecord: SNSEventRecord, error: any): void {
-    if (SNSFunction.Log?.error) {
-      SNSFunction.Log.error(message, { eventRecord }, error);
-    } else {
-      // eslint-disable-next-line no-console
-      console.error(`${error.stack}\n\n${message}: ${JSON.stringify(eventRecord)}`);
     }
   }
 

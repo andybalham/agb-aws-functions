@@ -1,43 +1,35 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 import { SQSEvent } from 'aws-lambda/trigger/sqs';
-import { Context } from 'aws-lambda/handler';
-import FunctionLog from './FunctionLog';
+import BaseFunction from './BaseFunction';
 
-export default abstract class SQSFunction<T> {
+export default abstract class SQSFunction<T> extends BaseFunction<
+  SQSEvent,
+  PromiseSettledResult<void>[]
+> {
   //
-  static Log: FunctionLog | undefined;
-
-  event: SQSEvent;
-
-  context: Context;
-
-  async handleAsync(event: SQSEvent, context: Context): Promise<void> {
+  async handleInternalAsync(event: SQSEvent): Promise<PromiseSettledResult<void>[]> {
     //
-    context.callbackWaitsForEmptyEventLoop = false;
+    const recordPromises = event.Records.map(async (record) => {
+      const message = JSON.parse(record.body);
+      await this.handleMessageInternalAsync(message);
+    });
 
-    if (SQSFunction.Log?.debug) SQSFunction.Log.debug('SQSEvent', { event });
+    return Promise.allSettled(recordPromises);
+  }
 
-    this.event = event;
-    this.context = context;
+  private async handleMessageInternalAsync(message: T): Promise<void> {
+    //
+    if ((message as any).Event?.endsWith(':TestEvent')) {
+      if (SQSFunction.Log?.info) SQSFunction.Log.info('Skipping test event', { message });
+      return;
+    }
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const eventRecord of event.Records) {
-      //
-      if (SQSFunction.Log?.debug) SQSFunction.Log.debug('eventRecord', { eventRecord });
-
-      const message = JSON.parse(eventRecord.body);
-
-      if (message.Event?.endsWith(':TestEvent')) {
-        if (SQSFunction.Log?.info)
-          SQSFunction.Log.info('Skipping test event', { messageEvent: message.Event });
-        break;
-      }
-
-      // TODO 28Mar21: Add some optional error handling
-
-      // eslint-disable-next-line no-await-in-loop
+    try {
       await this.handleMessageAsync(message);
+    } catch (error) {
+      this.logError('Error handling message', { message }, error);
+      throw error;
     }
   }
 
