@@ -10,6 +10,7 @@ import TestRestApi from './TestRestApi';
 import TestRunnerFunction from './TestRunnerFunction';
 import { TestState, TestReadRequest, TestRunRequest } from './TestState';
 import TestStateDynamoDBTable from './TestStateDynamoDBTable';
+import TestRunner from './TestRunner';
 
 const newTestFunction = ({
   scope,
@@ -109,6 +110,7 @@ export {
   runTestAsync,
   pollTestStateAsync,
   waitAsync,
+  TestRunner,
   TestRestApi,
   TestRunnerFunction,
   TestRunRequest,
