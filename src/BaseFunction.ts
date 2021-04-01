@@ -17,7 +17,7 @@ export default abstract class BaseFunction<TEvent, TContext extends IContext, TR
 
   event: TEvent;
 
-  context: TContext;
+  context?: TContext;
 
   baseProps: BaseFunctionProps<TEvent> = {
     logEvent: true,
@@ -35,13 +35,13 @@ export default abstract class BaseFunction<TEvent, TContext extends IContext, TR
     this.baseProps = { ...this.baseProps, ...props };
   }
 
-  async handleAsync(event: TEvent, context: TContext): Promise<TResult> {
+  async handleAsync(event: TEvent, context?: TContext): Promise<TResult> {
     //
     if (this.baseProps.logEvent && this.baseProps.eventLogger) {
       this.baseProps.eventLogger(event);
     }
 
-    context.callbackWaitsForEmptyEventLoop = false;
+    if (context) context.callbackWaitsForEmptyEventLoop = false;
 
     this.event = event;
     this.context = context;
@@ -49,7 +49,7 @@ export default abstract class BaseFunction<TEvent, TContext extends IContext, TR
     return this.handleInternalAsync(event, context);
   }
 
-  protected abstract handleInternalAsync(event: TEvent, context: TContext): Promise<TResult>;
+  protected abstract handleInternalAsync(event: TEvent, context?: TContext): Promise<TResult>;
 
   protected logError(message: string, handledData: any, error: any): void {
     if (BaseFunction.Log?.error) {
