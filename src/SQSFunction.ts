@@ -8,8 +8,8 @@ export type SQSFunctionProps = BaseFunctionProps<SQSEvent>;
 
 export default abstract class SQSFunction<T> extends BaseFunction<
   SQSEvent,
-  Context,
-  PromiseSettledResult<void>[]
+  PromiseSettledResult<void>[],
+  Context
 > {
   //
   props: SQSFunctionProps = {};

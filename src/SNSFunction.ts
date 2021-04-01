@@ -12,7 +12,7 @@ export interface SNSFunctionProps extends BaseFunctionProps<SNSEvent> {
   handleError?: boolean;
 }
 
-export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, Context, void> {
+export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, void, Context> {
   //
   props: SNSFunctionProps = {
     handleError: true,
@@ -40,12 +40,9 @@ export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, Cont
 
       if (this.props.handleError) {
         try {
-          //
           await this.handleMessageAsync(message);
-          //
         } catch (error) {
           this.logError('Error handling event record', { eventRecord }, error);
-
           try {
             await this.handleErrorAsync(error, message);
           } catch (errorHandlingError) {

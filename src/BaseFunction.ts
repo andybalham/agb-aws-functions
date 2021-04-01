@@ -11,7 +11,7 @@ export interface IContext {
   callbackWaitsForEmptyEventLoop: boolean;
 }
 
-export default abstract class BaseFunction<TEvent, TContext extends IContext, TResult> {
+export default abstract class BaseFunction<TEvent, TResult, TContext extends IContext> {
   //
   static Log: FunctionLog | undefined;
 

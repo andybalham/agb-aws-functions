@@ -2,25 +2,23 @@
 /* istanbul ignore file */
 import { S3Event, S3EventRecord } from 'aws-lambda/trigger/s3';
 import { Context } from 'aws-lambda/handler';
-import FunctionLog from './FunctionLog';
+import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
-export default abstract class S3Function {
+export type S3FunctionProps = BaseFunctionProps<S3Event>;
+
+// TODO 01Apr21: Is there any real need for this function?
+
+export default abstract class S3Function extends BaseFunction<S3Event, void, Context> {
   //
-  static Log: FunctionLog | undefined;
+  props: S3FunctionProps = {};
 
-  event: S3Event;
+  constructor(props?: S3FunctionProps) {
+    super(props);
+    this.props = { ...this.props, ...props };
+  }
 
-  context: Context;
-
-  async handleAsync(event: S3Event, context: Context): Promise<void> {
+  protected async handleInternalAsync(event: S3Event): Promise<void> {
     //
-    if (S3Function.Log?.debug) S3Function.Log.debug('S3Event', { event });
-
-    if (context) context.callbackWaitsForEmptyEventLoop = false;
-
-    this.event = event;
-    this.context = context;
-
     // eslint-disable-next-line no-restricted-syntax
     for (const eventRecord of event.Records) {
       //

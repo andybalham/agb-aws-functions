@@ -16,8 +16,8 @@ export interface ApiGatewayFunctionProps extends BaseFunctionProps<APIGatewayPro
 
 export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunction<
   APIGatewayProxyEvent,
-  Context,
-  APIGatewayProxyResult
+  APIGatewayProxyResult,
+  Context
 > {
   //
   static getCorrelationIds?: () => any;
