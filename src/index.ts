@@ -8,8 +8,10 @@ import FunctionLog from './FunctionLog';
 import { HttpStatusCode } from './HttpStatusCode';
 import S3Function from './S3Function';
 import DynamoDBStreamFunction, { DynamoDBEventTypes } from './DynamoDBStreamFunction';
+import BaseFunction from './BaseFunction';
 
 export {
+  BaseFunction,
   FunctionLog,
   TaskFunction,
   ApiGatewayFunction,

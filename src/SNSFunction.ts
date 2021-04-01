@@ -4,21 +4,22 @@
 /* eslint-disable class-methods-use-this */
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
+import { Context } from 'aws-lambda/handler';
 import { SNSEvent } from 'aws-lambda/trigger/sns';
-import BaseFunction from './BaseFunction';
+import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
-export interface SNSFunctionProps {
+export interface SNSFunctionProps extends BaseFunctionProps<SNSEvent> {
   handleError?: boolean;
 }
 
-export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, void> {
+export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, Context, void> {
   //
   props: SNSFunctionProps = {
     handleError: true,
   };
 
   constructor(props?: SNSFunctionProps) {
-    super();
+    super(props);
     this.props = { ...this.props, ...props };
   }
 

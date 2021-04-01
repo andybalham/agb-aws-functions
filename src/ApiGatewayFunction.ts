@@ -6,40 +6,37 @@ import { Context } from 'aws-lambda/handler';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda/trigger/api-gateway-proxy';
 
 import createHttpError from 'http-errors';
-import FunctionLog from './FunctionLog';
+import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 import { HttpStatusCode } from './HttpStatusCode';
 
-export default abstract class ApiGatewayFunction<TReq, TRes> {
+export interface ApiGatewayFunctionProps extends BaseFunctionProps<APIGatewayProxyEvent> {
+  responseStatusCode?: HttpStatusCode;
+  includeCorrelationAndRequestIds?: boolean;
+}
+
+export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunction<
+  APIGatewayProxyEvent,
+  Context,
+  APIGatewayProxyResult
+> {
   //
-  static Log: FunctionLog | undefined;
-
   static getCorrelationIds?: () => any;
-
-  responseStatusCode = HttpStatusCode.OK;
-
-  includeCorrelationAndRequestIds = true;
-
-  event: APIGatewayProxyEvent;
-
-  context?: Context;
 
   requestId: string;
 
   correlationId: string;
 
-  async handleAsync(
-    event: APIGatewayProxyEvent,
-    context?: Context
-  ): Promise<APIGatewayProxyResult> {
+  props: ApiGatewayFunctionProps = {
+    includeCorrelationAndRequestIds: true,
+  };
+
+  constructor(props?: ApiGatewayFunctionProps) {
+    super(props);
+    this.props = { ...this.props, ...props };
+  }
+
+  protected async handleInternalAsync(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     //
-    if (ApiGatewayFunction.Log?.debug)
-      ApiGatewayFunction.Log.debug('APIGatewayProxyEvent', { event });
-
-    if (context) context.callbackWaitsForEmptyEventLoop = false;
-
-    this.event = event;
-    this.context = context;
-
     if (ApiGatewayFunction.getCorrelationIds) {
       const correlationIds = ApiGatewayFunction.getCorrelationIds();
       this.requestId = correlationIds.awsRequestId;
@@ -53,13 +50,13 @@ export default abstract class ApiGatewayFunction<TReq, TRes> {
     try {
       const response = await this.handleRequestAsync(request);
 
-      if (this.includeCorrelationAndRequestIds && response !== undefined) {
+      if (this.props.includeCorrelationAndRequestIds && response !== undefined) {
         (response as any).correlationId = this.correlationId;
         (response as any).requestId = this.requestId;
       }
 
       const result = {
-        statusCode: this.responseStatusCode,
+        statusCode: this.props.responseStatusCode ?? HttpStatusCode.OK,
         body: typeof response !== 'undefined' ? JSON.stringify(response) : JSON.stringify({}),
       };
 
@@ -69,8 +66,7 @@ export default abstract class ApiGatewayFunction<TReq, TRes> {
       //
     } catch (error) {
       //
-      if (ApiGatewayFunction.Log?.error)
-        ApiGatewayFunction.Log.error('Error handling request', error);
+      this.logError('Error handling request', event, error);
 
       throw new createHttpError.InternalServerError(
         JSON.stringify({

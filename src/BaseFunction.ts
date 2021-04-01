@@ -1,19 +1,45 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable class-methods-use-this */
-import { Context } from 'aws-lambda/handler';
 import FunctionLog from './FunctionLog';
 
-export default abstract class BaseFunction<TEvent, TResult> {
+export interface BaseFunctionProps<TEvent> {
+  logEvent?: boolean;
+  eventLogger?: (event: TEvent) => void;
+}
+
+export interface IContext {
+  callbackWaitsForEmptyEventLoop: boolean;
+}
+
+export default abstract class BaseFunction<TEvent, TContext extends IContext, TResult> {
   //
   static Log: FunctionLog | undefined;
 
   event: TEvent;
 
-  context: Context;
+  context: TContext;
 
-  async handleAsync(event: TEvent, context: Context): Promise<TResult> {
+  baseProps: BaseFunctionProps<TEvent> = {
+    logEvent: true,
+    eventLogger: (event) => {
+      if (BaseFunction.Log?.debug) {
+        BaseFunction.Log.debug('Handling event', { event });
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(`Handling event: ${JSON.stringify({ event })}`);
+      }
+    },
+  };
+
+  constructor(props?: BaseFunctionProps<TEvent>) {
+    this.baseProps = { ...this.baseProps, ...props };
+  }
+
+  async handleAsync(event: TEvent, context: TContext): Promise<TResult> {
     //
-    if (BaseFunction.Log?.debug) BaseFunction.Log.debug('Handling event', { event });
+    if (this.baseProps.logEvent && this.baseProps.eventLogger) {
+      this.baseProps.eventLogger(event);
+    }
 
     context.callbackWaitsForEmptyEventLoop = false;
 
@@ -23,7 +49,7 @@ export default abstract class BaseFunction<TEvent, TResult> {
     return this.handleInternalAsync(event, context);
   }
 
-  protected abstract handleInternalAsync(event: TEvent, context: Context): Promise<TResult>;
+  protected abstract handleInternalAsync(event: TEvent, context: TContext): Promise<TResult>;
 
   protected logError(message: string, handledData: any, error: any): void {
     if (BaseFunction.Log?.error) {

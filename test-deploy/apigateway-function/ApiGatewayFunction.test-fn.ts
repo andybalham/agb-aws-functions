@@ -10,10 +10,11 @@ import Log from '@dazn/lambda-powertools-logger';
 import CorrelationIds from '@dazn/lambda-powertools-correlation-ids';
 import middyCorrelationIds from '@dazn/lambda-powertools-middleware-correlation-ids';
 import { Context } from 'aws-lambda/handler';
-import { ApiGatewayFunction } from '../../src';
+import { ApiGatewayFunction, BaseFunction } from '../../src';
 
 const correlationIdParams = { sampleDebugLogRate: 0.01 };
 
+BaseFunction.Log = Log;
 ApiGatewayFunction.Log = Log;
 ApiGatewayFunction.getCorrelationIds = CorrelationIds.get;
 

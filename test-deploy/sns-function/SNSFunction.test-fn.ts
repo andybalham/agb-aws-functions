@@ -8,11 +8,12 @@ import middy from '@middy/core';
 import { DynamoDBClient, SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
-import { ApiGatewayFunction, SNSFunction } from '../../src';
+import { ApiGatewayFunction, BaseFunction, SNSFunction } from '../../src';
 import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
 
-SNSFunction.Log = log;
+BaseFunction.Log = log;
 ApiGatewayFunction.Log = log;
+SNSFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);

@@ -9,9 +9,10 @@ import { DynamoDBClient, SQSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import sqsBatch from '@middy/sqs-partial-batch-failure';
-import { ApiGatewayFunction, SQSFunction } from '../../src';
+import { ApiGatewayFunction, BaseFunction, SQSFunction } from '../../src';
 import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
 
+BaseFunction.Log = log;
 SQSFunction.Log = log;
 ApiGatewayFunction.Log = log;
 

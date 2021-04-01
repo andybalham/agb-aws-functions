@@ -1,13 +1,24 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
+import { Context } from 'aws-lambda/handler';
 import { SQSEvent } from 'aws-lambda/trigger/sqs';
-import BaseFunction from './BaseFunction';
+import BaseFunction, { BaseFunctionProps } from './BaseFunction';
+
+export type SQSFunctionProps = BaseFunctionProps<SQSEvent>;
 
 export default abstract class SQSFunction<T> extends BaseFunction<
   SQSEvent,
+  Context,
   PromiseSettledResult<void>[]
 > {
   //
+  props: SQSFunctionProps = {};
+
+  constructor(props?: SQSFunctionProps) {
+    super(props);
+    this.props = { ...this.props, ...props };
+  }
+
   async handleInternalAsync(event: SQSEvent): Promise<PromiseSettledResult<void>[]> {
     //
     const recordPromises = event.Records.map(async (record) => {
