@@ -1,6 +1,5 @@
 /* eslint-disable no-new */
 /* eslint-disable import/no-extraneous-dependencies */
-import path from 'path';
 import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda';
@@ -14,13 +13,17 @@ export interface TestApiProps {
 
 export default class TestRestApi extends cdk.Construct {
   //
+  readonly id: string;
+
   readonly apiRoot: apigateway.IResource;
 
-  readonly testTable: dynamodb.Table;
+  readonly testStateTable: dynamodb.Table;
 
   constructor(scope: cdk.Construct, id: string, props: TestApiProps) {
     //
     super(scope, `${id}TestApi`);
+
+    this.id = id;
 
     const api = new apigateway.RestApi(this, `${id}TestApiGateway`, {
       apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
@@ -55,32 +58,66 @@ export default class TestRestApi extends cdk.Construct {
       description: `${id} Test Usage Plan`,
     });
 
-    this.testTable = new TestStateDynamoDBTable(this, id);
+    this.testStateTable = new TestStateDynamoDBTable(this, id);
+  }
 
-    const testReaderFunction = new lambdaNodejs.NodejsFunction(scope, id, {
-      entry: path.join(__dirname, '.', `TestStateReaderFunction.ts`),
-      handler: 'testStateReaderHandler',
+  addTestStarterFunction(
+    entryModulePath: string,
+    environment?: { [key: string]: string }
+  ): lambda.Function {
+    //
+    const testStarterFunction = new lambdaNodejs.NodejsFunction(this, `${this.id}StarterFunction`, {
+      entry: entryModulePath,
+      handler: 'testStarterHandler',
       environment: {
-        TEST_TABLE_NAME: this.testTable.tableName,
+        ...environment,
+        TEST_TABLE_NAME: this.testStateTable.tableName,
       },
     });
 
-    this.testTable.grantReadData(testReaderFunction);
+    this.testStateTable.grantReadWriteData(testStarterFunction);
 
-    this.addGetFunction({
-      path: 'test/{testStack}/{testName}',
-      methodFunction: testReaderFunction,
+    this.addPostFunction({
+      path: 'start-test',
+      methodFunction: testStarterFunction,
     });
+
+    return testStarterFunction;
   }
 
-  addGetFunction(args: {
-    path: string;
-    methodFunction: lambda.Function;
-    options?: apigateway.MethodOptions;
-  }): apigateway.Method {
-    return this.addMethodFunction({ ...args, httpMethod: 'GET' });
+  addTestPollerFunction(
+    entryModulePath: string,
+    environment?: { [key: string]: string }
+  ): lambda.Function {
+    //
+    const testPollerFunction = new lambdaNodejs.NodejsFunction(this, `${this.id}PollerFunction`, {
+      entry: entryModulePath,
+      handler: 'testPollerHandler',
+      environment: {
+        ...environment,
+        TEST_TABLE_NAME: this.testStateTable.tableName,
+      },
+    });
+
+    this.testStateTable.grantReadData(testPollerFunction);
+
+    this.addPostFunction({
+      path: 'poll-test',
+      methodFunction: testPollerFunction,
+    });
+
+    return testPollerFunction;
   }
 
+  // private addGetFunction(args: {
+  //   path: string;
+  //   methodFunction: lambda.Function;
+  //   options?: apigateway.MethodOptions;
+  // }): apigateway.Method {
+  //   return this.addMethodFunction({ ...args, httpMethod: 'GET' });
+  // }
+
+  // TODO 02Apr21: Make this private
   addPostFunction(args: {
     path: string;
     methodFunction: lambda.Function;
@@ -89,7 +126,7 @@ export default class TestRestApi extends cdk.Construct {
     return this.addMethodFunction({ ...args, httpMethod: 'POST' });
   }
 
-  addMethodFunction({
+  private addMethodFunction({
     path: methodPath,
     httpMethod,
     methodFunction,

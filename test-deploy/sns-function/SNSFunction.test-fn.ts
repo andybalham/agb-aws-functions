@@ -9,45 +9,56 @@ import { DynamoDBClient, SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import { ApiGatewayFunction, BaseFunction, SNSFunction } from '../../src';
-import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
+import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
+import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
+import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
+
+const testStack = 'SNSFunction';
 
 BaseFunction.Log = log;
 ApiGatewayFunction.Log = log;
 SNSFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
-const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);
+const testStateRepository = new TestStateRepository(
+  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+);
 
-export class TestMessage {
-  testName: string;
-
-  value: string;
+export enum Scenarios {
+  ReceivesMessage = 'receives_message',
+  HandlesError = 'handles_error',
 }
 
-// Test runner function
+interface TestMessage {
+  scenario: string;
+}
 
-class SNSFunctionTestRunnerFunction extends TestRunnerFunction {
+// Test starter function
+
+class SNSFunctionTestStarterFunction extends TestStarterFunction {
   //
-  async runTestAsync(testName: string, testInput: Record<string, any>): Promise<void> {
+  getTestExpectations(): any | undefined {}
+
+  async startTestAsync(scenario: string): Promise<void> {
     //
-    switch (testName) {
+    switch (scenario) {
       //
-      case 'handles_message':
-      case 'throw_error':
-        await snsClient.publishMessageAsync(testInput);
+      case Scenarios.ReceivesMessage:
+      case Scenarios.HandlesError:
+        await snsClient.publishMessageAsync({ scenario });
         break;
 
       default:
-        throw new Error(`Unhandled testName: ${testName}`);
+        throw new Error(`Unhandled testScenario: ${scenario}`);
     }
   }
 }
 
-const snsFunctionTestRunnerFunction = new SNSFunctionTestRunnerFunction(testTableClient);
+const snsFunctionTestStarterFunction = new SNSFunctionTestStarterFunction(testStateRepository);
 
-export const snsFunctionTestRunnerHandler = middy(
+export const testStarterHandler = middy(
   async (event: any, context: Context): Promise<any> =>
-    snsFunctionTestRunnerFunction.handleAsync(event, context)
+    snsFunctionTestStarterFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
 
 // Receive test message function
@@ -56,42 +67,17 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
   //
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    // eslint-disable-next-line default-case
-    switch (message.testName) {
-      case 'throw_error':
-        throw new Error(`Test error: ${message.value}`);
+    if (message.scenario === Scenarios.HandlesError) {
+      throw new Error(`Test error`);
     }
 
-    const testReadRequest: TestReadRequest = {
-      testStack: 'SNSFunction',
-      testName: 'handles_message',
-    };
-
-    await this.updateTestStateAsync(testReadRequest, message);
+    await testStateRepository.putCurrentScenarioItemAsync(testStack, 'result', { success: true });
   }
 
   protected async handleErrorAsync(error: any): Promise<void> {
-    //
-    const testReadRequest: TestReadRequest = {
-      testStack: 'SNSFunction',
-      testName: 'throw_error',
-    };
-
-    await this.updateTestStateAsync(testReadRequest, error.message);
-  }
-
-  private async updateTestStateAsync(
-    testReadRequest: TestReadRequest,
-    actualOutput: any
-  ): Promise<void> {
-    //
-    const testState = await testTableClient.getAsync<TestState>(testReadRequest);
-
-    if (!testState) {
-      throw new Error(`Could locate the test state for ${JSON.stringify(testReadRequest)}`);
-    }
-
-    await testTableClient.putAsync({ ...testState, actualOutput });
+    await testStateRepository.putCurrentScenarioItemAsync(testStack, 'result', {
+      errorMessage: error.message,
+    });
   }
 }
 
@@ -101,3 +87,38 @@ export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     receiveTestMessageFunction.handleAsync(event, context)
 );
+
+// Test poller function
+
+class SNSFunctionTestPollerFunction extends TestPollerFunction {
+  //
+  async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
+    //
+    if (scenarioItems.length < 1) {
+      return {};
+    }
+
+    switch (scenario) {
+      //
+      case Scenarios.ReceivesMessage:
+        return {
+          success: scenarioItems[0].itemData.success === true,
+        };
+
+      case Scenarios.HandlesError:
+        return {
+          success: scenarioItems[0].itemData.errorMessage === 'Test error',
+        };
+
+      default:
+        throw new Error(`Unhandled scenario: ${scenario}`);
+    }
+  }
+}
+
+const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction(testStateRepository);
+
+export const testPollerHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    snsFunctionTestPollerFunction.handleAsync(event, context)
+).use(httpErrorHandler());

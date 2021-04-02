@@ -13,6 +13,8 @@ dotenv.config();
 
 type SNSFunctionStackProps = cdk.StackProps;
 
+const functionEntry = path.join(__dirname, '.', `SNSFunction.test-fn.ts`);
+
 export default class SNSFunctionStack extends cdk.Stack {
   //
   newSNSTestFunction = (args: {
@@ -22,7 +24,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      entry: path.join(__dirname, '.', `SNSFunction.test-fn.ts`),
+      entry: functionEntry,
     });
 
   constructor(scope: cdk.App, id: string, props: SNSFunctionStackProps) {
@@ -37,34 +39,26 @@ export default class SNSFunctionStack extends cdk.Stack {
       displayName: 'SNSFunction test topic',
     });
 
-    // SnsFunctionTestRunnerFunction
+    // Test starter and test poller functions
 
-    const snsFunctionTestRunnerFunction = this.newSNSTestFunction({
-      name: 'SNSFunctionTestRunner',
-      environment: {
-        TEST_TABLE_NAME: testApi.testTable.tableName,
-        SNS_FUNCTION_TOPIC_ARN: testTopic.topicArn,
-      },
+    const testStarterFunction = testApi.addTestStarterFunction(functionEntry, {
+      SNS_FUNCTION_TOPIC_ARN: testTopic.topicArn,
     });
 
-    testApi.testTable.grantWriteData(snsFunctionTestRunnerFunction);
-    testTopic.grantPublish(snsFunctionTestRunnerFunction);
+    testTopic.grantPublish(testStarterFunction);
 
-    testApi.addPostFunction({
-      path: 'run-test',
-      methodFunction: snsFunctionTestRunnerFunction,
-    });
+    testApi.addTestPollerFunction(functionEntry);
 
     // ReceiveTestMessageFunction
 
     const receiveTestMessageFunction = this.newSNSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        TEST_TABLE_NAME: testApi.testTable.tableName,
+        TEST_TABLE_NAME: testApi.testStateTable.tableName,
       },
     });
 
     testTopic.addSubscription(new subs.LambdaSubscription(receiveTestMessageFunction));
-    testApi.testTable.grantReadWriteData(receiveTestMessageFunction);
+    testApi.testStateTable.grantReadWriteData(receiveTestMessageFunction);
   }
 }

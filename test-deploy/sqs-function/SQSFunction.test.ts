@@ -4,62 +4,23 @@
 /* eslint-disable no-console */
 import { expect } from 'chai';
 import dotenv from 'dotenv';
-import { nanoid } from 'nanoid';
-import { pollTestStateAsync, runTestAsync } from '../../agb-aws-test-deploy';
-import { TestMessage } from './SQSFunction.test-fn';
+import { TestRunner } from '../../agb-aws-test-deploy';
+import { Scenarios } from './SQSFunction.test-fn';
 
 dotenv.config();
 
-const testStack = 'SQSFunction';
-
-const testApiConfig = {
+const testRunner = new TestRunner('SQSFunction', {
   baseURL: process.env.SQS_FUNCTION_BASE_URL,
   headers: {
     'x-api-key': process.env.SQS_FUNCTION_API_KEY,
   },
-};
+});
 
 describe('SQSFunction integration tests', () => {
   //
-  it('receives message', async () => {
+  it.only('receives message', async () => {
     //
-    const testInput: TestMessage = {
-      testName: 'handles_message',
-      value: nanoid(10),
-    };
-
-    const testReadRequest = await runTestAsync({
-      testStack,
-      testName: testInput.testName,
-      testInput,
-      expectedOutput: { ...testInput },
-      timeoutSeconds: 10,
-      testApiConfig,
-    });
-
-    const testSucceeded = await pollTestStateAsync(testReadRequest, testApiConfig);
-
-    expect(testSucceeded).to.be.true;
-  });
-
-  it.skip('handles error', async () => {
-    //
-    const testInput: TestMessage = {
-      testName: 'throw_error',
-      value: nanoid(10),
-    };
-
-    const testReadRequest = await runTestAsync({
-      testStack,
-      testName: testInput.testName,
-      testInput,
-      expectedOutput: `Test error: ${testInput.value}`,
-      timeoutSeconds: 3,
-      testApiConfig,
-    });
-
-    const testSucceeded = await pollTestStateAsync(testReadRequest, testApiConfig);
-
-    expect(testSucceeded).to.be.true;
+    const { success, message } = await testRunner.runTestAsync(Scenarios.ReceivesMessage);
+    expect(success, message).to.be.true;
   });
 });

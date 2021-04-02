@@ -4,62 +4,27 @@
 /* eslint-disable no-console */
 import { expect } from 'chai';
 import dotenv from 'dotenv';
-import { nanoid } from 'nanoid';
-import { pollTestStateAsync, runTestAsync } from '../../agb-aws-test-deploy';
-import { TestMessage } from './SNSFunction.test-fn';
+import { TestRunner } from '../../agb-aws-test-deploy';
+import { Scenarios } from './SNSFunction.test-fn';
 
 dotenv.config();
 
-const testStack = 'SNSFunction';
-
-const testApiConfig = {
+const testRunner = new TestRunner('SNSFunction', {
   baseURL: process.env.SNS_FUNCTION_BASE_URL,
   headers: {
     'x-api-key': process.env.SNS_FUNCTION_API_KEY,
   },
-};
+});
 
 describe('SNSFunction integration tests', () => {
   //
-  it('receives message', async () => {
-    //
-    const testInput: TestMessage = {
-      testName: 'handles_message',
-      value: nanoid(10),
-    };
+  const theories = [{ scenario: Scenarios.ReceivesMessage }, { scenario: Scenarios.HandlesError }];
 
-    const testReadRequest = await runTestAsync({
-      testStack,
-      testName: testInput.testName,
-      testInput,
-      expectedOutput: { ...testInput },
-      timeoutSeconds: 3,
-      testApiConfig,
+  // eslint-disable-next-line no-restricted-syntax
+  for (const theory of theories) {
+    it(theory.scenario, async () => {
+      const { success, message } = await testRunner.runTestAsync(theory.scenario);
+      expect(success, message).to.be.true;
     });
-
-    const testSucceeded = await pollTestStateAsync(testReadRequest, testApiConfig);
-
-    expect(testSucceeded).to.be.true;
-  });
-
-  it('handles error', async () => {
-    //
-    const testInput: TestMessage = {
-      testName: 'throw_error',
-      value: nanoid(10),
-    };
-
-    const testReadRequest = await runTestAsync({
-      testStack,
-      testName: testInput.testName,
-      testInput,
-      expectedOutput: `Test error: ${testInput.value}`,
-      timeoutSeconds: 3,
-      testApiConfig,
-    });
-
-    const testSucceeded = await pollTestStateAsync(testReadRequest, testApiConfig);
-
-    expect(testSucceeded).to.be.true;
-  });
+  }
 });

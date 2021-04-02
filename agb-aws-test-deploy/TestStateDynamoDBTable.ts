@@ -10,8 +10,8 @@ export default class TestStateDynamoDBTable extends dynamodb.Table {
       ...tableProps,
       ...{
         // TODO 21Mar21: Could we set a time to live on this?
-        partitionKey: { name: 'testStack', type: dynamodb.AttributeType.STRING },
-        sortKey: { name: 'testName', type: dynamodb.AttributeType.STRING },
+        partitionKey: { name: 'stack', type: dynamodb.AttributeType.STRING },
+        sortKey: { name: 'scenarioKey', type: dynamodb.AttributeType.STRING },
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       },
     });

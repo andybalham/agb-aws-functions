@@ -52,12 +52,12 @@ export default class SQSFunctionStack extends cdk.Stack {
     const sqsFunctionTestRunnerFunction = this.newSQSTestFunction({
       name: 'SQSFunctionTestRunner',
       environment: {
-        TEST_TABLE_NAME: testApi.testTable.tableName,
+        TEST_TABLE_NAME: testApi.testStateTable.tableName,
         SQS_FUNCTION_QUEUE_URL: testQueue.queueUrl,
       },
     });
 
-    testApi.testTable.grantWriteData(sqsFunctionTestRunnerFunction);
+    testApi.testStateTable.grantWriteData(sqsFunctionTestRunnerFunction);
     testQueue.grantSendMessages(sqsFunctionTestRunnerFunction);
 
     testApi.addPostFunction({
@@ -70,7 +70,7 @@ export default class SQSFunctionStack extends cdk.Stack {
     const receiveTestMessageFunction = this.newSQSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        TEST_TABLE_NAME: testApi.testTable.tableName,
+        TEST_TABLE_NAME: testApi.testStateTable.tableName,
       },
     });
 
@@ -80,6 +80,6 @@ export default class SQSFunctionStack extends cdk.Stack {
       })
     );
 
-    testApi.testTable.grantReadWriteData(receiveTestMessageFunction);
+    testApi.testStateTable.grantReadWriteData(receiveTestMessageFunction);
   }
 }

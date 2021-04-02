@@ -5,12 +5,11 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
-import axios from 'axios';
 import TestRestApi from './TestRestApi';
-import TestRunnerFunction from './TestRunnerFunction';
-import { TestState, TestReadRequest, TestRunRequest } from './TestState';
 import TestStateDynamoDBTable from './TestStateDynamoDBTable';
 import TestRunner from './TestRunner';
+import TestStarterFunction from './TestStarterFunction';
+import TestPollerFunction from './TestPollerFunction';
 
 const newTestFunction = ({
   scope,
@@ -36,85 +35,11 @@ const newTestFunction = ({
   });
 };
 
-async function runTestAsync({
-  testStack,
-  testName,
-  testInput,
-  expectedOutput,
-  timeoutSeconds,
-  testApiConfig,
-}: {
-  testStack: string;
-  testName: string;
-  testInput: any;
-  expectedOutput: any;
-  timeoutSeconds: number;
-  testApiConfig: { baseURL: string | undefined; headers: { 'x-api-key': string | undefined } };
-}): Promise<TestReadRequest> {
-  //
-  const testRunRequest: TestRunRequest = {
-    testStack,
-    testName,
-    testInput,
-    expectedOutput,
-    timeoutSeconds,
-  };
-
-  const runTestResponse = await axios.post('run-test', testRunRequest, testApiConfig);
-
-  if (runTestResponse.status !== 200) {
-    throw new Error(`Unexpected runTestResponse.status: ${runTestResponse.status}`);
-  }
-
-  return testRunRequest;
-}
-
-async function waitAsync(waitSeconds: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
-}
-
-async function pollTestStateAsync(
-  testReadRequest: TestReadRequest,
-  testApiConfig: { baseURL: string | undefined; headers: { 'x-api-key': string | undefined } }
-): Promise<boolean> {
-  //
-  let testTimedOut = false;
-  let testSucceeded = false;
-
-  while (!testTimedOut && !testSucceeded) {
-    //
-    await waitAsync(1);
-
-    const readTestResponse = await axios.get(
-      `test/${testReadRequest.testStack}/${testReadRequest.testName}`,
-      testApiConfig
-    );
-
-    if (readTestResponse.status !== 200) {
-      throw new Error(`Unexpected readTestResponse.status: ${readTestResponse.status}`);
-    }
-
-    testTimedOut = Date.now() > readTestResponse.data.timeoutTime;
-
-    const actualOutputJson = JSON.stringify(readTestResponse.data.actualOutput);
-    const expectedOutputJson = JSON.stringify(readTestResponse.data.expectedOutput);
-
-    testSucceeded = actualOutputJson === expectedOutputJson;
-  }
-
-  return testSucceeded;
-}
-
 export {
   newTestFunction,
-  runTestAsync,
-  pollTestStateAsync,
-  waitAsync,
   TestRunner,
   TestRestApi,
-  TestRunnerFunction,
-  TestRunRequest,
-  TestReadRequest,
-  TestState,
+  TestStarterFunction,
+  TestPollerFunction,
   TestStateDynamoDBTable,
 };
