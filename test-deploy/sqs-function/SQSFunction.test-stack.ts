@@ -43,6 +43,7 @@ export default class SQSFunctionStack extends cdk.Stack {
 
     const testQueue = new sqs.Queue(this, 'SQSFunctionQueue', {
       receiveMessageWaitTime: cdk.Duration.seconds(20),
+      visibilityTimeout: cdk.Duration.seconds(3),
       deadLetterQueue: {
         maxReceiveCount: 1,
         queue: testDLQ,
@@ -75,5 +76,22 @@ export default class SQSFunctionStack extends cdk.Stack {
     );
 
     testApi.testStateTable.grantReadWriteData(receiveTestMessageFunction);
+
+    // DLQTestMessageFunction
+
+    const dlqTestMessageFunction = this.newSQSTestFunction({
+      name: 'DLQTestMessage',
+      environment: {
+        TEST_TABLE_NAME: testApi.testStateTable.tableName,
+      },
+    });
+
+    dlqTestMessageFunction.addEventSource(
+      new lambdaEventSources.SqsEventSource(testDLQ, {
+        enabled: isSQSEnabled,
+      })
+    );
+
+    testApi.testStateTable.grantReadWriteData(dlqTestMessageFunction);
   }
 }

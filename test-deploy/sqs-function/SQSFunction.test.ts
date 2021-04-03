@@ -18,12 +18,19 @@ const testRunner = new TestRunner({
 
 describe('SQSFunction integration tests', () => {
   //
-  const theories = [{ scenario: Scenarios.HandlesMessage }];
+  const theories = [
+    { scenario: Scenarios.HandlesMessage },
+    { scenario: Scenarios.HandlesMessageBatch },
+    { scenario: Scenarios.HandlesMessageBatchError, timeoutSeconds: 60 },
+  ];
 
   // eslint-disable-next-line no-restricted-syntax
   for (const theory of theories) {
     it(theory.scenario, async () => {
-      const { success, message } = await testRunner.runTestAsync(theory.scenario);
+      const { success, message } = await testRunner.runTestAsync(
+        theory.scenario,
+        theory.timeoutSeconds
+      );
       expect(success, message).to.be.true;
     });
   }

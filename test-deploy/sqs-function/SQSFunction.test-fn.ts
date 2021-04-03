@@ -84,6 +84,30 @@ class SQSFunctionTestPollerFunction extends TestPollerFunction {
           success: scenarioItems[0].itemData.success === true,
         };
 
+      case Scenarios.HandlesMessageBatch: {
+        if (scenarioItems.length < 10) {
+          return {};
+        }
+        return {
+          success: scenarioItems.every((item) => item.itemData.success === true),
+        };
+      }
+
+      case Scenarios.HandlesMessageBatchError: {
+        // eslint-disable-next-line no-console
+        console.log(`scenarioItems: ${JSON.stringify(scenarioItems)}`);
+        if (scenarioItems.length < 10) {
+          // eslint-disable-next-line no-console
+          console.log(`Still waiting for 10`);
+          return {};
+        }
+        return {
+          success: scenarioItems.every(
+            (item) => item.itemData.success === (item.itemId !== 'message-7')
+          ),
+        };
+      }
+
       default:
         throw new Error(`Unhandled scenario: ${scenario}`);
     }
@@ -101,10 +125,33 @@ export const testPollerHandler = middy(
 
 class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
   //
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    await testStateRepository.putCurrentScenarioItemAsync('Result', { success: true });
+    switch (message.scenario) {
+      //
+      case Scenarios.HandlesMessage:
+        await testStateRepository.putCurrentScenarioItemAsync('message', { success: true });
+        break;
+
+      case Scenarios.HandlesMessageBatch:
+        await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+          success: true,
+        });
+        break;
+
+      case Scenarios.HandlesMessageBatchError:
+        if (message.index === 7) {
+          throw new Error(`Unlucky 7`);
+        } else {
+          await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+            success: true,
+          });
+        }
+        break;
+
+      default:
+        throw new Error(`Unhandled scenario: ${message.scenario}`);
+    }
   }
 }
 
@@ -113,4 +160,23 @@ const receiveTestMessageFunction = new ReceiveTestMessageFunction();
 export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     receiveTestMessageFunction.handleAsync(event, context)
+).use(sqsBatch());
+
+// DLQ function
+
+class DLQTestMessageFunction extends SQSFunction<TestMessage> {
+  //
+  async handleMessageAsync(message: TestMessage): Promise<void> {
+    //
+    await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+      success: false,
+    });
+  }
+}
+
+const dlqTestMessageFunction = new DLQTestMessageFunction();
+
+export const dlqTestMessageHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    dlqTestMessageFunction.handleAsync(event, context)
 ).use(sqsBatch());
