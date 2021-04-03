@@ -14,7 +14,10 @@ export interface TestStateItem {
 
 export default class TestStateRepository {
   //
-  constructor(private testStateClient: DynamoDBClient) {}
+  constructor(private testStateClient: DynamoDBClient) {
+    this.testStateClient.partitionKeyName = 'scenario';
+    this.testStateClient.sortKeyName = 'itemId';
+  }
 
   async setStackScenarioAsync(scenario: string, testParams?: any): Promise<void> {
     //

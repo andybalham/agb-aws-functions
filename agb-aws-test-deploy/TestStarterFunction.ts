@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 /* eslint-disable import/no-extraneous-dependencies */
 import { ApiGatewayFunction } from '../src';
 import { TestStartRequest } from './TestRunner';
@@ -21,7 +22,10 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
     await this.startTestAsync(testScenario);
   }
 
-  abstract getTestParams(scenario: string): any | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected getTestParams(scenario: string): any | undefined {
+    return undefined;
+  }
 
   abstract startTestAsync(scenario: string): Promise<void>;
 }

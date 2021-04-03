@@ -1,110 +1,116 @@
 // eslint-disable-next-line import/prefer-default-export
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable import/prefer-default-export */
+/* eslint-disable class-methods-use-this */
+/* eslint-disable max-classes-per-file */
+import { Context } from 'aws-lambda/handler';
+import middy from '@middy/core';
+import { SQSClient } from '@andybalham/agb-aws-clients';
+import httpErrorHandler from '@middy/http-error-handler';
+import log from '@dazn/lambda-powertools-logger';
+import sqsBatch from '@middy/sqs-partial-batch-failure';
+import { ApiGatewayFunction, BaseFunction, SQSFunction } from '../../src';
+import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
+import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
+import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
+import { DynamoDBClient } from '../../agb-aws-clients';
+
 export enum Scenarios {
-  ReceivesMessage = 'receives_message',
+  HandlesMessage = 'handles_message',
+  HandlesMessageBatch = 'handles_message_batch',
+  HandlesMessageBatchError = 'handles_message_batch_error',
 }
 
-// /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-// /* eslint-disable import/no-extraneous-dependencies */
-// /* eslint-disable import/prefer-default-export */
-// /* eslint-disable class-methods-use-this */
-// /* eslint-disable max-classes-per-file */
-// import { Context } from 'aws-lambda/handler';
-// import middy from '@middy/core';
-// import { DynamoDBClient, SQSClient } from '@andybalham/agb-aws-clients';
-// import httpErrorHandler from '@middy/http-error-handler';
-// import log from '@dazn/lambda-powertools-logger';
-// import sqsBatch from '@middy/sqs-partial-batch-failure';
-// import { ApiGatewayFunction, BaseFunction, SQSFunction } from '../../src';
-// import { TestState, TestReadRequest, TestRunnerFunction } from '../../agb-aws-test-deploy';
+BaseFunction.Log = log;
+SQSFunction.Log = log;
+ApiGatewayFunction.Log = log;
 
-// BaseFunction.Log = log;
-// SQSFunction.Log = log;
-// ApiGatewayFunction.Log = log;
+const sqsClient = new SQSClient(process.env.SQS_FUNCTION_QUEUE_URL);
+const testStateRepository = new TestStateRepository(
+  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+);
 
-// const sqsClient = new SQSClient(process.env.SQS_FUNCTION_QUEUE_URL);
-// const testTableClient = new DynamoDBClient(process.env.TEST_TABLE_NAME);
+export interface TestMessage {
+  scenario: string;
+  index?: number;
+}
 
-// export class TestMessage {
-//   testName: string;
+// Test starter function
 
-//   value: string;
-// }
+class SQSFunctionTestStarterFunction extends TestStarterFunction {
+  //
+  async startTestAsync(scenario: string): Promise<void> {
+    //
+    switch (scenario) {
+      //
+      case Scenarios.HandlesMessage:
+        await sqsClient.sendMessageAsync({ scenario });
+        break;
 
-// // Test runner function
+      case Scenarios.HandlesMessageBatch:
+      case Scenarios.HandlesMessageBatchError:
+        {
+          const sendMessagePromises = Array.from(Array(10).keys()).map((index) =>
+            sqsClient.sendMessageAsync({ scenario, index })
+          );
+          await Promise.all(sendMessagePromises);
+        }
+        break;
 
-// class SQSFunctionTestRunnerFunction extends TestRunnerFunction {
-//   //
-//   async runTestAsync(scenarioId: string): Promise<void> {
-//     //
-//     switch (scenarioId) {
-//       //
-//       case 'handles_message':
-//       case 'throw_error':
-//         await sqsClient.sendMessageAsync({ scenarioId });
-//         break;
+      default:
+        throw new Error(`Unhandled scenario: ${scenario}`);
+    }
+  }
+}
 
-//       case 'handles_batch':
-//       case 'handles_batch_with_error':
-//         {
-//           const sendMessagePromises = Array.from(Array(10).keys()).map((index) =>
-//             sqsClient.sendMessageAsync({ scenarioId, value: index.toString() })
-//           );
+const sqsFunctionTestStarterFunction = new SQSFunctionTestStarterFunction(testStateRepository);
 
-//           await Promise.all(sendMessagePromises);
-//         }
-//         break;
+export const testStarterHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    sqsFunctionTestStarterFunction.handleAsync(event, context)
+).use(httpErrorHandler());
 
-//       default:
-//         throw new Error(`Unhandled testName: ${scenarioId}`);
-//     }
-//   }
-// }
+// Test poller function
 
-// const sqsFunctionTestRunnerFunction = new SQSFunctionTestRunnerFunction(testTableClient);
+class SQSFunctionTestPollerFunction extends TestPollerFunction {
+  //
+  async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
+    //
+    switch (scenario) {
+      //
+      case Scenarios.HandlesMessage:
+        return {
+          success: scenarioItems[0].itemData.success === true,
+        };
 
-// export const sqsFunctionTestRunnerHandler = middy(
-//   async (event: any, context: Context): Promise<any> =>
-//     sqsFunctionTestRunnerFunction.handleAsync(event, context)
-// ).use(httpErrorHandler());
+      default:
+        throw new Error(`Unhandled scenario: ${scenario}`);
+    }
+  }
+}
 
-// // Receive test message function
+const sqsFunctionTestPollerFunction = new SQSFunctionTestPollerFunction(testStateRepository);
 
-// class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
-//   //
-//   async handleMessageAsync(message: TestMessage): Promise<void> {
-//     //
-//     // eslint-disable-next-line default-case
-//     switch (message.testName) {
-//       case 'throw_error':
-//         throw new Error(`Test error: ${message.value}`);
-//     }
+export const testPollerHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    sqsFunctionTestPollerFunction.handleAsync(event, context)
+).use(httpErrorHandler());
 
-//     const testReadRequest: TestReadRequest = {
-//       testStack: 'SQSFunction',
-//       testName: 'handles_message',
-//     };
+// Receive test message function
 
-//     await this.updateTestStateAsync(testReadRequest, message);
-//   }
+class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
+  //
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async handleMessageAsync(message: TestMessage): Promise<void> {
+    //
+    await testStateRepository.putCurrentScenarioItemAsync('Result', { success: true });
+  }
+}
 
-//   private async updateTestStateAsync(
-//     testReadRequest: TestReadRequest,
-//     actualOutput: any
-//   ): Promise<void> {
-//     //
-//     const testState = await testTableClient.getAsync<TestState>(testReadRequest);
+const receiveTestMessageFunction = new ReceiveTestMessageFunction();
 
-//     if (!testState) {
-//       throw new Error(`Could locate the test state for ${JSON.stringify(testReadRequest)}`);
-//     }
-
-//     await testTableClient.putAsync({ ...testState, actualOutput });
-//   }
-// }
-
-// const receiveTestMessageFunction = new ReceiveTestMessageFunction();
-
-// export const receiveTestMessageHandler = middy(
-//   async (event: any, context: Context): Promise<any> =>
-//     receiveTestMessageFunction.handleAsync(event, context)
-// ).use(sqsBatch());
+export const receiveTestMessageHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    receiveTestMessageFunction.handleAsync(event, context)
+).use(sqsBatch());

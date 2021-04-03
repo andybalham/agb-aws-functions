@@ -20,7 +20,7 @@ SNSFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testStateRepository = new TestStateRepository(
-  new DynamoDBClient(process.env.TEST_TABLE_NAME, 'scenario', 'itemId')
+  new DynamoDBClient(process.env.TEST_TABLE_NAME)
 );
 
 export enum Scenarios {
@@ -93,12 +93,6 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
   //
   async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
     //
-    // eslint-disable-next-line no-console
-    console.log(`{ scenario, scenarioItems }: ${JSON.stringify({ scenario, scenarioItems })}`);
-    if (scenarioItems.length < 1) {
-      return {};
-    }
-
     switch (scenario) {
       //
       case Scenarios.ReceivesMessage:

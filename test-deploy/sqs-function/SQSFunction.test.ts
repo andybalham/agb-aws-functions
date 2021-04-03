@@ -18,9 +18,13 @@ const testRunner = new TestRunner({
 
 describe('SQSFunction integration tests', () => {
   //
-  it.only('receives message', async () => {
-    //
-    const { success, message } = await testRunner.runTestAsync(Scenarios.ReceivesMessage);
-    expect(success, message).to.be.true;
-  });
+  const theories = [{ scenario: Scenarios.HandlesMessage }];
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const theory of theories) {
+    it(theory.scenario, async () => {
+      const { success, message } = await testRunner.runTestAsync(theory.scenario);
+      expect(success, message).to.be.true;
+    });
+  }
 });

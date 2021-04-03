@@ -15,6 +15,8 @@ const isSQSEnabled = process.env.SQS_ENABLED === 'true';
 
 type SQSFunctionStackProps = cdk.StackProps;
 
+const functionEntry = path.join(__dirname, '.', `SQSFunction.test-fn.ts`);
+
 export default class SQSFunctionStack extends cdk.Stack {
   //
   newSQSTestFunction = (args: {
@@ -24,7 +26,7 @@ export default class SQSFunctionStack extends cdk.Stack {
     newTestFunction({
       ...args,
       scope: this,
-      entry: path.join(__dirname, '.', `SQSFunction.test-fn.ts`),
+      entry: functionEntry,
     });
 
   constructor(scope: cdk.App, id: string, props: SQSFunctionStackProps) {
@@ -47,23 +49,15 @@ export default class SQSFunctionStack extends cdk.Stack {
       },
     });
 
-    // SQSFunctionTestRunnerFunction
+    // Test starter and test poller functions
 
-    const sqsFunctionTestRunnerFunction = this.newSQSTestFunction({
-      name: 'SQSFunctionTestRunner',
-      environment: {
-        TEST_TABLE_NAME: testApi.testStateTable.tableName,
-        SQS_FUNCTION_QUEUE_URL: testQueue.queueUrl,
-      },
+    const testStarterFunction = testApi.addTestStarterFunction(functionEntry, {
+      SQS_FUNCTION_QUEUE_URL: testQueue.queueUrl,
     });
 
-    testApi.testStateTable.grantWriteData(sqsFunctionTestRunnerFunction);
-    testQueue.grantSendMessages(sqsFunctionTestRunnerFunction);
+    testQueue.grantSendMessages(testStarterFunction);
 
-    testApi.addPostFunction({
-      path: 'run-test',
-      methodFunction: sqsFunctionTestRunnerFunction,
-    });
+    testApi.addTestPollerFunction(functionEntry);
 
     // ReceiveTestMessageFunction
 

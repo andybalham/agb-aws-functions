@@ -56,6 +56,9 @@ export default class TestRunner {
 
     while (Date.now() < expiryTime) {
       // eslint-disable-next-line no-await-in-loop
+      await TestRunner.waitAsync(2);
+
+      // eslint-disable-next-line no-await-in-loop
       const pollResponse = await axios.post<TestPollResponse>(
         'poll-test',
         testPollRequest,
@@ -72,9 +75,6 @@ export default class TestRunner {
       if (pollResponse.data.success !== undefined) {
         return { ...pollResponse.data, success: pollResponse.data.success ?? false };
       }
-
-      // eslint-disable-next-line no-await-in-loop
-      await TestRunner.waitAsync(1);
     }
 
     return {

@@ -18,6 +18,10 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
 
     const scenarioItems = await this.testStateRepository.getStackScenarioItemsAsync(testScenario);
 
+    if (scenarioItems.length < 1) {
+      return {};
+    }
+
     return this.pollTestAsync(testScenario, scenarioItems, currentScenarioItem.itemData);
   }
 
