@@ -61,6 +61,7 @@
     "src/**/*",
     "test/**/*",
     "test-deploy/**/*", 
-    "agb-aws-test-deploy"
+    "agb-aws-test-deploy",
+    "agb-aws-clients"
   ]
 }

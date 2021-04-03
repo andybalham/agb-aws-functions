@@ -2,7 +2,8 @@
 /* eslint-disable no-new */
 /* eslint-disable import/no-extraneous-dependencies */
 // eslint-disable-next-line max-classes-per-file
-import { DynamoDBClient } from '@andybalham/agb-aws-clients';
+
+import { DynamoDBClient } from '../agb-aws-clients';
 
 // TODO 02Apr21: We don't need the stack, as we have a table per testing stack
 export interface TestStateItem {
@@ -23,16 +24,11 @@ export default class TestStateRepository {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const previousScenarioItem of previousScenarioItems) {
-      //
-      const params = {
-        TableName: this.testStateClient.tableName ?? 'undefined',
-        Key: {
-          stack: previousScenarioItem.stack,
-          scenarioKey: previousScenarioItem.scenarioKey,
-        },
-      };
       // eslint-disable-next-line no-await-in-loop
-      await this.testStateClient.documentClient.delete(params).promise();
+      await this.testStateClient.deleteAsync({
+        stack: previousScenarioItem.stack,
+        scenarioKey: previousScenarioItem.scenarioKey,
+      });
     }
 
     const currentStackScenario: TestStateItem = {
@@ -78,18 +74,6 @@ export default class TestStateRepository {
   }
 
   async getStackScenarioItemsAsync(stack: string, scenario: string): Promise<TestStateItem[]> {
-    //
-    const params = {
-      TableName: this.testStateClient.tableName ?? 'undefined',
-      KeyConditionExpression: 'stack = :stack and begins_with(scenarioKey, :scenario)',
-      ExpressionAttributeValues: {
-        ':stack': stack,
-        ':scenario': scenario,
-      },
-    };
-
-    const queryOutput = await this.testStateClient.documentClient.query(params).promise();
-
-    return queryOutput.Items?.map((i) => i as TestStateItem) ?? [];
+    return this.testStateClient.queryBySortKeyPrefixAsync<TestStateItem>(stack, scenario);
   }
 }
