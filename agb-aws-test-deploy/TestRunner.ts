@@ -8,12 +8,10 @@ export interface TestRunResult {
 }
 
 export interface TestStartRequest {
-  testStack: string;
   testScenario: string;
 }
 
 export interface TestPollRequest {
-  testStack: string;
   testScenario: string;
 }
 
@@ -25,7 +23,6 @@ export interface TestPollResponse {
 export default class TestRunner {
   //
   constructor(
-    private testStack: string,
     private testApiConfig: {
       baseURL: string | undefined;
       headers: { 'x-api-key': string | undefined };
@@ -35,7 +32,6 @@ export default class TestRunner {
   async runTestAsync(testScenario: string, timeoutSeconds = 6): Promise<TestRunResult> {
     //
     const testStartRequest: TestStartRequest = {
-      testStack: this.testStack,
       testScenario,
     };
 
@@ -48,12 +44,11 @@ export default class TestRunner {
     if (startResponse.status !== 200) {
       return {
         success: false,
-        message: `${this.testStack}:${testScenario} returned unexpected HTTP status for start: ${startResponse.status}`,
+        message: `${testScenario} returned unexpected HTTP status for start: ${startResponse.status}`,
       };
     }
 
     const testPollRequest: TestPollRequest = {
-      testStack: this.testStack,
       testScenario,
     };
 
@@ -70,7 +65,7 @@ export default class TestRunner {
       if (pollResponse.status !== 200) {
         return {
           success: false,
-          message: `${this.testStack}:${testScenario} returned unexpected HTTP status for poll: ${pollResponse.status}`,
+          message: `${testScenario} returned unexpected HTTP status for poll: ${pollResponse.status}`,
         };
       }
 
@@ -84,7 +79,7 @@ export default class TestRunner {
 
     return {
       success: false,
-      message: `${this.testStack}:${testScenario} timed out`,
+      message: `${testScenario} timed out`,
     };
   }
 

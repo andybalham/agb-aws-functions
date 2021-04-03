@@ -12,16 +12,16 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
     super();
   }
 
-  async handleRequestAsync({ testStack, testScenario }: TestStartRequest): Promise<void> {
+  async handleRequestAsync({ testScenario }: TestStartRequest): Promise<void> {
     //
-    const testExpectations = this.getTestExpectations(testScenario);
+    const testParams = this.getTestParams(testScenario);
 
-    await this.testStateRepository.setStackScenarioAsync(testStack, testScenario, testExpectations);
+    await this.testStateRepository.setStackScenarioAsync(testScenario, testParams);
 
     await this.startTestAsync(testScenario);
   }
 
-  abstract getTestExpectations(scenario: string): any | undefined;
+  abstract getTestParams(scenario: string): any | undefined;
 
   abstract startTestAsync(scenario: string): Promise<void>;
 }

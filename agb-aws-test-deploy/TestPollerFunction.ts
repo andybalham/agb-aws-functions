@@ -12,19 +12,11 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
     super();
   }
 
-  async handleRequestAsync({
-    testStack,
-    testScenario,
-  }: TestPollRequest): Promise<TestPollResponse> {
+  async handleRequestAsync({ testScenario }: TestPollRequest): Promise<TestPollResponse> {
     //
-    const currentScenarioItem = await this.testStateRepository.getCurrentScenarioItemAsync(
-      testStack
-    );
+    const currentScenarioItem = await this.testStateRepository.getCurrentScenarioItemAsync();
 
-    const scenarioItems = await this.testStateRepository.getStackScenarioItemsAsync(
-      testStack,
-      testScenario
-    );
+    const scenarioItems = await this.testStateRepository.getStackScenarioItemsAsync(testScenario);
 
     return this.pollTestAsync(testScenario, scenarioItems, currentScenarioItem.itemData);
   }
@@ -33,6 +25,6 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
     scenario: string,
     scenarioItems: TestStateItem[],
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    expectations?: any
+    testParams?: any
   ): Promise<TestPollResponse>;
 }

@@ -9,7 +9,7 @@ import { Scenarios } from './SQSFunction.test-fn';
 
 dotenv.config();
 
-const testRunner = new TestRunner('SQSFunction', {
+const testRunner = new TestRunner({
   baseURL: process.env.SQS_FUNCTION_BASE_URL,
   headers: {
     'x-api-key': process.env.SQS_FUNCTION_API_KEY,

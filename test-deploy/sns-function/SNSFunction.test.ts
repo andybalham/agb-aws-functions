@@ -9,7 +9,7 @@ import { Scenarios } from './SNSFunction.test-fn';
 
 dotenv.config();
 
-const testRunner = new TestRunner('SNSFunction', {
+const testRunner = new TestRunner({
   baseURL: process.env.SNS_FUNCTION_BASE_URL,
   headers: {
     'x-api-key': process.env.SNS_FUNCTION_API_KEY,

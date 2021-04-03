@@ -5,15 +5,14 @@
 /* eslint-disable max-classes-per-file */
 import { Context } from 'aws-lambda/handler';
 import middy from '@middy/core';
-import { DynamoDBClient, SNSClient } from '@andybalham/agb-aws-clients';
+import { SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import { ApiGatewayFunction, BaseFunction, SNSFunction } from '../../src';
 import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
 import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
 import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
-
-const testStack = 'SNSFunction';
+import { DynamoDBClient } from '../../agb-aws-clients';
 
 BaseFunction.Log = log;
 ApiGatewayFunction.Log = log;
@@ -21,7 +20,7 @@ SNSFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testStateRepository = new TestStateRepository(
-  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+  new DynamoDBClient(process.env.TEST_TABLE_NAME, 'scenario', 'itemId')
 );
 
 export enum Scenarios {
@@ -37,7 +36,7 @@ interface TestMessage {
 
 class SNSFunctionTestStarterFunction extends TestStarterFunction {
   //
-  getTestExpectations(): any | undefined {}
+  getTestParams(): any | undefined {}
 
   async startTestAsync(scenario: string): Promise<void> {
     //
@@ -71,11 +70,11 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
       throw new Error(`Test error`);
     }
 
-    await testStateRepository.putCurrentScenarioItemAsync(testStack, 'result', { success: true });
+    await testStateRepository.putCurrentScenarioItemAsync('result', { success: true });
   }
 
   protected async handleErrorAsync(error: any): Promise<void> {
-    await testStateRepository.putCurrentScenarioItemAsync(testStack, 'result', {
+    await testStateRepository.putCurrentScenarioItemAsync('result', {
       errorMessage: error.message,
     });
   }
@@ -94,6 +93,8 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
   //
   async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
     //
+    // eslint-disable-next-line no-console
+    console.log(`{ scenario, scenarioItems }: ${JSON.stringify({ scenario, scenarioItems })}`);
     if (scenarioItems.length < 1) {
       return {};
     }

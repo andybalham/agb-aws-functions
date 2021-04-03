@@ -7,8 +7,6 @@ import { DynamoDBClient } from '../agb-aws-clients';
 
 // TODO 02Apr21: We don't need the stack, as we have a table per testing stack
 export interface TestStateItem {
-  stack: string;
-  scenarioKey: string;
   scenario: string;
   itemId: string;
   itemData: any;
@@ -18,41 +16,35 @@ export default class TestStateRepository {
   //
   constructor(private testStateClient: DynamoDBClient) {}
 
-  async setStackScenarioAsync(stack: string, scenario: string, expectations?: any): Promise<void> {
+  async setStackScenarioAsync(scenario: string, testParams?: any): Promise<void> {
     //
-    const previousScenarioItems = await this.getStackScenarioItemsAsync(stack, scenario);
+    const previousScenarioItems = await this.getStackScenarioItemsAsync(scenario);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const previousScenarioItem of previousScenarioItems) {
       // eslint-disable-next-line no-await-in-loop
       await this.testStateClient.deleteAsync({
-        stack: previousScenarioItem.stack,
-        scenarioKey: previousScenarioItem.scenarioKey,
+        scenario: previousScenarioItem.scenario,
+        itemId: previousScenarioItem.itemId,
       });
     }
 
     const currentStackScenario: TestStateItem = {
-      stack,
-      scenarioKey: 'scenario|current',
-      scenario,
-      itemId: 'expectations',
-      itemData: expectations,
+      scenario: 'current',
+      itemId: 'scenario',
+      itemData: { scenario, params: testParams },
     };
 
     await this.testStateClient.putAsync(currentStackScenario);
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async putCurrentScenarioItemAsync(stack: string, itemId: string, itemData?: any): Promise<void> {
+  async putCurrentScenarioItemAsync(itemId: string, itemData?: any): Promise<void> {
     //
-    const currentScenarioStateItem = await this.getCurrentScenarioItemAsync(stack);
-
-    const { scenario } = currentScenarioStateItem;
+    const currentScenarioStateItem = await this.getCurrentScenarioItemAsync();
 
     const scenarioItem: TestStateItem = {
-      stack,
-      scenarioKey: `${scenario}|${itemId}`,
-      scenario,
+      scenario: currentScenarioStateItem.itemData.scenario,
       itemId,
       itemData,
     };
@@ -60,11 +52,11 @@ export default class TestStateRepository {
     await this.testStateClient.putAsync(scenarioItem);
   }
 
-  public async getCurrentScenarioItemAsync(stack: string): Promise<TestStateItem> {
+  public async getCurrentScenarioItemAsync(): Promise<TestStateItem> {
     //
     const currentScenarioStateItem = await this.testStateClient.getAsync<TestStateItem>({
-      stack,
-      scenarioKey: 'scenario|current',
+      scenario: 'current',
+      itemId: 'scenario',
     });
 
     if (currentScenarioStateItem === undefined)
@@ -73,7 +65,7 @@ export default class TestStateRepository {
     return currentScenarioStateItem;
   }
 
-  async getStackScenarioItemsAsync(stack: string, scenario: string): Promise<TestStateItem[]> {
-    return this.testStateClient.queryBySortKeyPrefixAsync<TestStateItem>(stack, scenario);
+  async getStackScenarioItemsAsync(scenario: string): Promise<TestStateItem[]> {
+    return this.testStateClient.queryByPartitionKeyAsync<TestStateItem>(scenario);
   }
 }
