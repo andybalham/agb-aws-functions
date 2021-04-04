@@ -34,6 +34,10 @@ interface TestMessage {
 
 class SNSFunctionTestStarterFunction extends TestStarterFunction {
   //
+  constructor() {
+    super(testStateRepository, { log });
+  }
+
   async startTestAsync(scenario: string): Promise<void> {
     //
     switch (scenario) {
@@ -58,9 +62,7 @@ class SNSFunctionTestStarterFunction extends TestStarterFunction {
   }
 }
 
-const snsFunctionTestStarterFunction = new SNSFunctionTestStarterFunction(testStateRepository, {
-  log,
-});
+const snsFunctionTestStarterFunction = new SNSFunctionTestStarterFunction();
 
 export const testStarterHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -71,6 +73,10 @@ export const testStarterHandler = middy(
 
 class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
   //
+  constructor() {
+    super({ log });
+  }
+
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
     switch (message.scenario) {
@@ -93,14 +99,15 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     }
   }
 
-  protected async handleErrorAsync(error: any): Promise<void> {
+  async handleErrorAsync(error: any, message: TestMessage): Promise<void> {
+    await super.handleErrorAsync(error, message);
     await testStateRepository.putCurrentScenarioItemAsync('result', {
       errorMessage: error.message,
     });
   }
 }
 
-const receiveTestMessageFunction = new ReceiveTestMessageFunction({ log });
+const receiveTestMessageFunction = new ReceiveTestMessageFunction();
 
 export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -111,6 +118,10 @@ export const receiveTestMessageHandler = middy(
 
 class SNSFunctionTestPollerFunction extends TestPollerFunction {
   //
+  constructor() {
+    super(testStateRepository, { log });
+  }
+
   async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
     //
     switch (scenario) {
@@ -140,9 +151,7 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
   }
 }
 
-const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction(testStateRepository, {
-  log,
-});
+const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction();
 
 export const testPollerHandler = middy(
   async (event: any, context: Context): Promise<any> =>
