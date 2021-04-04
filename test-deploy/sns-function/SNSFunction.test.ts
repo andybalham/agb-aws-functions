@@ -18,7 +18,11 @@ const testRunner = new TestRunner({
 
 describe('SNSFunction integration tests', () => {
   //
-  const theories = [{ scenario: Scenarios.ReceivesMessage }, { scenario: Scenarios.HandlesError }];
+  const theories = [
+    { scenario: Scenarios.HandlesMessage },
+    { scenario: Scenarios.HandlesMessageBatch },
+    { scenario: Scenarios.HandlesError },
+  ];
 
   // eslint-disable-next-line no-restricted-syntax
   for (const theory of theories) {

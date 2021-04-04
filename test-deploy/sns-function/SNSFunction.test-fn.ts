@@ -24,12 +24,14 @@ const testStateRepository = new TestStateRepository(
 );
 
 export enum Scenarios {
-  ReceivesMessage = 'receives_message',
+  HandlesMessage = 'handles_message',
+  HandlesMessageBatch = 'handles_message_batch',
   HandlesError = 'handles_error',
 }
 
 interface TestMessage {
   scenario: string;
+  index?: number;
 }
 
 // Test starter function
@@ -42,9 +44,18 @@ class SNSFunctionTestStarterFunction extends TestStarterFunction {
     //
     switch (scenario) {
       //
-      case Scenarios.ReceivesMessage:
+      case Scenarios.HandlesMessage:
       case Scenarios.HandlesError:
         await snsClient.publishMessageAsync({ scenario });
+        break;
+
+      case Scenarios.HandlesMessageBatch:
+        {
+          const publishMessagePromises = Array.from(Array(10).keys()).map((index) =>
+            snsClient.publishMessageAsync({ scenario, index })
+          );
+          await Promise.all(publishMessagePromises);
+        }
         break;
 
       default:
@@ -66,11 +77,24 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
   //
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    if (message.scenario === Scenarios.HandlesError) {
-      throw new Error(`Test error`);
-    }
+    switch (message.scenario) {
+      //
+      case Scenarios.HandlesMessage:
+        await testStateRepository.putCurrentScenarioItemAsync('message', { success: true });
+        break;
 
-    await testStateRepository.putCurrentScenarioItemAsync('result', { success: true });
+      case Scenarios.HandlesMessageBatch:
+        await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+          success: true,
+        });
+        break;
+
+      case Scenarios.HandlesError:
+        throw new Error(`Test error`);
+
+      default:
+        throw new Error(`Unhandled scenario: ${message.scenario}`);
+    }
   }
 
   protected async handleErrorAsync(error: any): Promise<void> {
@@ -95,10 +119,19 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
     //
     switch (scenario) {
       //
-      case Scenarios.ReceivesMessage:
+      case Scenarios.HandlesMessage:
         return {
           success: scenarioItems[0].itemData.success === true,
         };
+
+      case Scenarios.HandlesMessageBatch: {
+        if (scenarioItems.length < 10) {
+          return {};
+        }
+        return {
+          success: scenarioItems.every((item) => item.itemData.success === true),
+        };
+      }
 
       case Scenarios.HandlesError:
         return {

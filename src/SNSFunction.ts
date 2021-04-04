@@ -5,14 +5,18 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 import { Context } from 'aws-lambda/handler';
-import { SNSEvent } from 'aws-lambda/trigger/sns';
+import { SNSEvent, SNSEventRecord } from 'aws-lambda/trigger/sns';
 import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
 export interface SNSFunctionProps extends BaseFunctionProps<SNSEvent> {
   handleError?: boolean;
 }
 
-export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, void, Context> {
+export default abstract class SNSFunction<T> extends BaseFunction<
+  SNSEvent,
+  PromiseSettledResult<void>[],
+  Context
+> {
   //
   props: SNSFunctionProps = {
     handleError: true,
@@ -23,35 +27,40 @@ export default abstract class SNSFunction<T> extends BaseFunction<SNSEvent, void
     this.props = { ...this.props, ...props };
   }
 
-  protected async handleInternalAsync(event: SNSEvent): Promise<void> {
+  protected async handleInternalAsync(event: SNSEvent): Promise<PromiseSettledResult<void>[]> {
     //
-    // eslint-disable-next-line no-restricted-syntax
-    for (const eventRecord of event.Records) {
-      //
-      if (SNSFunction.Log?.debug) SNSFunction.Log.debug('Handling event record', { eventRecord });
+    const recordPromises = event.Records.map(async (record) => {
+      await this.handleRecordAsync(record);
+    });
 
-      const message = JSON.parse(eventRecord.Sns.Message);
+    return Promise.allSettled(recordPromises);
+  }
 
-      if (message.Event?.endsWith(':TestEvent')) {
-        if (SNSFunction.Log?.info)
-          SNSFunction.Log.info('Skipping test event', { messageEvent: message.Event });
-        break;
-      }
+  private async handleRecordAsync(eventRecord: SNSEventRecord): Promise<void> {
+    //
+    if (SNSFunction.Log?.debug) SNSFunction.Log.debug('Handling event record', { eventRecord });
 
-      if (this.props.handleError) {
-        try {
-          await this.handleMessageAsync(message);
-        } catch (error) {
-          this.logError('Error handling event record', { eventRecord }, error);
-          try {
-            await this.handleErrorAsync(error, message);
-          } catch (errorHandlingError) {
-            this.logError('Error handling event record error', { eventRecord }, errorHandlingError);
-          }
-        }
-      } else {
+    const message = JSON.parse(eventRecord.Sns.Message);
+
+    if (message.Event?.endsWith(':TestEvent')) {
+      if (SNSFunction.Log?.info)
+        SNSFunction.Log.info('Skipping test event', { messageEvent: message.Event });
+      return;
+    }
+
+    if (this.props.handleError) {
+      try {
         await this.handleMessageAsync(message);
+      } catch (error) {
+        this.logError('Error handling event record', { eventRecord }, error);
+        try {
+          await this.handleErrorAsync(error, message);
+        } catch (errorHandlingError) {
+          this.logError('Error handling event record error', { eventRecord }, errorHandlingError);
+        }
       }
+    } else {
+      await this.handleMessageAsync(message);
     }
   }
 
