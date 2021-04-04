@@ -34,8 +34,6 @@ interface TestMessage {
 
 class SNSFunctionTestStarterFunction extends TestStarterFunction {
   //
-  getTestParams(): any | undefined {}
-
   async startTestAsync(scenario: string): Promise<void> {
     //
     switch (scenario) {

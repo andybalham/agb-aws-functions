@@ -26,17 +26,17 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
 
   correlationId: string;
 
-  props: ApiGatewayFunctionProps = {};
+  apiGatewayProps: ApiGatewayFunctionProps = {};
 
   constructor(props?: ApiGatewayFunctionProps) {
     super(props);
-    this.props = { ...this.props, ...props };
+    this.apiGatewayProps = { ...this.apiGatewayProps, ...props };
   }
 
   protected async handleInternalAsync(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     //
-    if (this.props.correlationIdGetter) {
-      const correlationIds = this.props.correlationIdGetter();
+    if (this.apiGatewayProps.correlationIdGetter) {
+      const correlationIds = this.apiGatewayProps.correlationIdGetter();
       this.requestId = correlationIds.awsRequestId;
       this.correlationId = correlationIds['x-correlation-id'];
     }
@@ -48,13 +48,13 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
     try {
       const response = await this.handleRequestAsync(request);
 
-      if (this.props.correlationIdGetter && response !== undefined) {
+      if (this.apiGatewayProps.correlationIdGetter && response !== undefined) {
         (response as any).correlationId = this.correlationId;
         (response as any).requestId = this.requestId;
       }
 
       const result = {
-        statusCode: this.props.responseStatusCode ?? HttpStatusCode.OK,
+        statusCode: this.apiGatewayProps.responseStatusCode ?? HttpStatusCode.OK,
         body: typeof response !== 'undefined' ? JSON.stringify(response) : JSON.stringify({}),
       };
 
