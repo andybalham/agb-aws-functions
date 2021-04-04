@@ -1,10 +1,12 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 import { Context } from 'aws-lambda/handler';
-import { SQSEvent } from 'aws-lambda/trigger/sqs';
+import { SQSEvent, SQSRecord } from 'aws-lambda/trigger/sqs';
 import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
-export type SQSFunctionProps = BaseFunctionProps<SQSEvent>;
+export interface SQSFunctionProps extends BaseFunctionProps<SQSEvent> {
+  logRecord?: boolean;
+}
 
 export default abstract class SQSFunction<T> extends BaseFunction<
   SQSEvent,
@@ -12,7 +14,9 @@ export default abstract class SQSFunction<T> extends BaseFunction<
   Context
 > {
   //
-  props: SQSFunctionProps = {};
+  props: SQSFunctionProps = {
+    logRecord: true,
+  };
 
   constructor(props?: SQSFunctionProps) {
     super(props);
@@ -20,19 +24,19 @@ export default abstract class SQSFunction<T> extends BaseFunction<
   }
 
   async handleInternalAsync(event: SQSEvent): Promise<PromiseSettledResult<void>[]> {
-    //
-    const recordPromises = event.Records.map(async (record) => {
-      const message = JSON.parse(record.body);
-      await this.handleMessageInternalAsync(message);
-    });
-
+    const recordPromises = event.Records.map((record) => this.handleMessageInternalAsync(record));
     return Promise.allSettled(recordPromises);
   }
 
-  private async handleMessageInternalAsync(message: T): Promise<void> {
+  private async handleMessageInternalAsync(record: SQSRecord): Promise<void> {
     //
+    if (this.props.logRecord && this.props.log?.debug)
+      this.props.log.debug('Handling event record', { record });
+
+    const message = JSON.parse(record.body);
+
     if ((message as any).Event?.endsWith(':TestEvent')) {
-      if (this.baseProps.log?.info) this.baseProps.log.info('Skipping test event', { message });
+      if (this.props.log?.info) this.props.log.info('Skipping test event', { message });
       return;
     }
 

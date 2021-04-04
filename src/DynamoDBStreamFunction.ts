@@ -2,51 +2,54 @@
 /* istanbul ignore file */
 /* eslint-disable import/no-extraneous-dependencies */
 import { Context } from 'aws-lambda/handler';
-import { DynamoDBStreamEvent } from 'aws-lambda/trigger/dynamodb-stream';
+import { DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda/trigger/dynamodb-stream';
 import DynamoDB from 'aws-sdk/clients/dynamodb';
-import { FunctionLog } from './FunctionLog';
+import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
-export default abstract class DynamoDBStreamFunction<T> {
+export interface DynamoDBStreamFunctionProps extends BaseFunctionProps<DynamoDBStreamEvent> {
+  logRecord?: boolean;
+}
+
+export default abstract class DynamoDBStreamFunction<T> extends BaseFunction<
+  DynamoDBStreamEvent,
+  PromiseSettledResult<void>[],
+  Context
+> {
   //
-  static Log: FunctionLog | undefined;
+  props: DynamoDBStreamFunctionProps = {
+    logRecord: true,
+  };
 
-  event: DynamoDBStreamEvent;
+  constructor(props?: DynamoDBStreamFunctionProps) {
+    super(props);
+    this.props = { ...this.props, ...props };
+  }
 
-  context: Context;
+  async handleAsync(event: DynamoDBStreamEvent): Promise<PromiseSettledResult<void>[]> {
+    const recordPromises = event.Records.map((record) => this.processRecordInternalAsync(record));
+    return Promise.allSettled(recordPromises);
+  }
 
-  async handleAsync(event: DynamoDBStreamEvent, context: Context): Promise<void> {
+  private async processRecordInternalAsync(eventRecord: DynamoDBRecord): Promise<void> {
     //
-    if (DynamoDBStreamFunction.Log?.debug)
-      DynamoDBStreamFunction.Log.debug('DynamoDBStreamEvent', { event });
+    if (this.props.logRecord && this.props.log?.debug)
+      this.props.log.debug('Processing record', { eventRecord });
 
-    context.callbackWaitsForEmptyEventLoop = false;
+    const { eventName } = eventRecord;
 
-    this.event = event;
-    this.context = context;
+    const oldImage =
+      eventRecord.dynamodb?.OldImage === undefined
+        ? undefined
+        : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.OldImage) as T);
+
+    const newImage =
+      eventRecord.dynamodb?.NewImage === undefined
+        ? undefined
+        : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.NewImage) as T);
 
     // TODO 13Mar21: How should we handle errors from processEventRecordAsync?
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const eventRecord of event.Records) {
-      //
-      if (DynamoDBStreamFunction.Log?.debug)
-        DynamoDBStreamFunction.Log.debug('eventRecord', { eventRecord });
-
-      const { eventName } = eventRecord;
-
-      const oldImage =
-        eventRecord.dynamodb?.OldImage === undefined
-          ? undefined
-          : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.OldImage) as T);
-
-      const newImage =
-        eventRecord.dynamodb?.NewImage === undefined
-          ? undefined
-          : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.NewImage) as T);
-
-      // eslint-disable-next-line no-await-in-loop
-      await this.processEventRecordAsync(eventName, oldImage, newImage);
-    }
+    await this.processEventRecordAsync(eventName, oldImage, newImage);
   }
 
   abstract processEventRecordAsync(

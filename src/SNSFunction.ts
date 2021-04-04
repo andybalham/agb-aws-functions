@@ -7,6 +7,7 @@ import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
 export interface SNSFunctionProps extends BaseFunctionProps<SNSEvent> {
   handleError?: boolean;
+  logRecord?: boolean;
 }
 
 export default abstract class SNSFunction<T> extends BaseFunction<
@@ -17,6 +18,7 @@ export default abstract class SNSFunction<T> extends BaseFunction<
   //
   props: SNSFunctionProps = {
     handleError: true,
+    logRecord: true,
   };
 
   constructor(props?: SNSFunctionProps) {
@@ -25,24 +27,20 @@ export default abstract class SNSFunction<T> extends BaseFunction<
   }
 
   protected async handleInternalAsync(event: SNSEvent): Promise<PromiseSettledResult<void>[]> {
-    //
-    const recordPromises = event.Records.map(async (record) => {
-      await this.handleRecordAsync(record);
-    });
-
+    const recordPromises = event.Records.map((record) => this.handleRecordAsync(record));
     return Promise.allSettled(recordPromises);
   }
 
   private async handleRecordAsync(eventRecord: SNSEventRecord): Promise<void> {
     //
-    if (this.baseProps.log?.debug)
-      this.baseProps.log.debug('Handling event record', { eventRecord });
+    if (this.props.logRecord && this.props.log?.debug)
+      this.props.log.debug('Handling event record', { eventRecord });
 
     const message = JSON.parse(eventRecord.Sns.Message);
 
     if (message.Event?.endsWith(':TestEvent')) {
-      if (this.baseProps.log?.info)
-        this.baseProps.log.info('Skipping test event', { messageEvent: message.Event });
+      if (this.props.log?.info)
+        this.props.log.info('Skipping test event', { messageEvent: message.Event });
       return;
     }
 
