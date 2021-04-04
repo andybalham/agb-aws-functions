@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable class-methods-use-this */
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 import { Context } from 'aws-lambda/handler';
@@ -50,22 +48,26 @@ export default abstract class SNSFunction<T> extends BaseFunction<
 
     if (this.props.handleError) {
       try {
+        //
         await this.handleMessageAsync(message);
+        //
       } catch (error) {
-        this.logError('Error handling event record', { eventRecord }, error);
         try {
           await this.handleErrorAsync(error, message);
         } catch (errorHandlingError) {
-          this.logError('Error handling event record error', { eventRecord }, errorHandlingError);
+          this.logError('Error handling error', { message }, errorHandlingError);
         }
       }
     } else {
+      //
       await this.handleMessageAsync(message);
+      //
     }
   }
 
   abstract handleMessageAsync(message: T): Promise<void>;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected async handleErrorAsync(error: any, message: T): Promise<void> {}
+  protected async handleErrorAsync(error: any, message: T): Promise<void> {
+    this.logError('Error handling message', { message }, error);
+  }
 }
