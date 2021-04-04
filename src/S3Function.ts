@@ -20,14 +20,14 @@ export default abstract class S3Function extends BaseFunction<S3Event, void, Con
   protected async handleInternalAsync(event: S3Event): Promise<void> {
     //
     // eslint-disable-next-line no-restricted-syntax
-    for (const eventRecord of event.Records) {
+    for (const record of event.Records) {
       //
-      if (this.baseProps.log?.debug) this.baseProps.log.debug('eventRecord', { eventRecord });
+      if (this.props.log?.debug) this.props.log.debug('eventRecord', { eventRecord: record });
 
       // TODO 25Nov20: Is there a test event from S3?
 
       // eslint-disable-next-line no-await-in-loop
-      await this.handleEventRecordAsync(eventRecord);
+      await this.handleEventRecordAsync(record);
     }
   }
 
