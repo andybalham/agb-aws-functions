@@ -1,7 +1,7 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 import { Context } from 'aws-lambda/handler';
-import FunctionLog from './FunctionLog';
+import { FunctionLog } from './FunctionLog';
 
 export default abstract class AppSyncBatchResolverFunction<TSrc, TRes> {
   //

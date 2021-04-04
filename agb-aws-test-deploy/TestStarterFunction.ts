@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable import/no-extraneous-dependencies */
 import { ApiGatewayFunction } from '../src';
+import { ApiGatewayFunctionProps } from '../src/ApiGatewayFunction';
 import { TestStartRequest } from './TestRunner';
 import TestStateRepository from './TestStateRepository';
 
@@ -9,8 +10,8 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
   void
 > {
   //
-  constructor(private testStateRepository: TestStateRepository) {
-    super();
+  constructor(private testStateRepository: TestStateRepository, props?: ApiGatewayFunctionProps) {
+    super(props);
   }
 
   async handleRequestAsync({ testScenario }: TestStartRequest): Promise<void> {

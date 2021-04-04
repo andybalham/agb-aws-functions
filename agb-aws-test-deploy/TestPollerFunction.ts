@@ -1,5 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { ApiGatewayFunction } from '../src';
+import { ApiGatewayFunctionProps } from '../src/ApiGatewayFunction';
 import { TestPollRequest, TestPollResponse } from './TestRunner';
 import TestStateRepository, { TestStateItem } from './TestStateRepository';
 
@@ -8,8 +9,8 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
   TestPollResponse
 > {
   //
-  constructor(private testStateRepository: TestStateRepository) {
-    super();
+  constructor(private testStateRepository: TestStateRepository, props?: ApiGatewayFunctionProps) {
+    super(props);
   }
 
   async handleRequestAsync({ testScenario }: TestPollRequest): Promise<TestPollResponse> {

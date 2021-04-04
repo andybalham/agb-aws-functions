@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable class-methods-use-this */
-import FunctionLog from './FunctionLog';
+import { ConsoleFunctionLog, FunctionLog } from './FunctionLog';
 
 export interface BaseFunctionProps<TEvent> {
+  log?: FunctionLog;
   logEvent?: boolean;
-  eventLogger?: (event: TEvent) => void;
+  eventLoggerOverride?: (event: TEvent) => void;
 }
 
 export interface IContext {
@@ -13,22 +14,13 @@ export interface IContext {
 
 export default abstract class BaseFunction<TEvent, TResult, TContext extends IContext> {
   //
-  static Log: FunctionLog | undefined;
-
   event: TEvent;
 
   context?: TContext;
 
   baseProps: BaseFunctionProps<TEvent> = {
+    log: new ConsoleFunctionLog(),
     logEvent: true,
-    eventLogger: (event) => {
-      if (BaseFunction.Log?.debug) {
-        BaseFunction.Log.debug('Handling event', { event });
-      } else {
-        // eslint-disable-next-line no-console
-        console.log(`Handling event: ${JSON.stringify({ event })}`);
-      }
-    },
   };
 
   constructor(props?: BaseFunctionProps<TEvent>) {
@@ -37,8 +29,12 @@ export default abstract class BaseFunction<TEvent, TResult, TContext extends ICo
 
   async handleAsync(event: TEvent, context?: TContext): Promise<TResult> {
     //
-    if (this.baseProps.logEvent && this.baseProps.eventLogger) {
-      this.baseProps.eventLogger(event);
+    if (this.baseProps.logEvent) {
+      if (this.baseProps.eventLoggerOverride) {
+        this.baseProps.eventLoggerOverride(event);
+      } else if (this.baseProps.log?.debug) {
+        this.baseProps.log.debug('Handling event', { event });
+      }
     }
 
     if (context) context.callbackWaitsForEmptyEventLoop = false;
@@ -52,8 +48,8 @@ export default abstract class BaseFunction<TEvent, TResult, TContext extends ICo
   protected abstract handleInternalAsync(event: TEvent, context?: TContext): Promise<TResult>;
 
   protected logError(message: string, handledData: any, error: any): void {
-    if (BaseFunction.Log?.error) {
-      BaseFunction.Log.error(message, handledData, error);
+    if (this.baseProps.log?.error) {
+      this.baseProps.log.error(message, handledData, error);
     } else {
       // eslint-disable-next-line no-console
       console.error(`${error.stack}\n\n${message}: ${JSON.stringify(handledData)}`);

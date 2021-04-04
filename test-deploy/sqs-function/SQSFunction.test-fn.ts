@@ -1,7 +1,5 @@
-// eslint-disable-next-line import/prefer-default-export
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable import/prefer-default-export */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable max-classes-per-file */
 import { Context } from 'aws-lambda/handler';
@@ -10,7 +8,7 @@ import { SQSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import sqsBatch from '@middy/sqs-partial-batch-failure';
-import { ApiGatewayFunction, BaseFunction, SQSFunction } from '../../src';
+import { SQSFunction } from '../../src';
 import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
 import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
 import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
@@ -21,10 +19,6 @@ export enum Scenarios {
   HandlesMessageBatch = 'handles_message_batch',
   HandlesMessageBatchError = 'handles_message_batch_error',
 }
-
-BaseFunction.Log = log;
-SQSFunction.Log = log;
-ApiGatewayFunction.Log = log;
 
 const sqsClient = new SQSClient(process.env.SQS_FUNCTION_QUEUE_URL);
 const testStateRepository = new TestStateRepository(
@@ -64,7 +58,9 @@ class SQSFunctionTestStarterFunction extends TestStarterFunction {
   }
 }
 
-const sqsFunctionTestStarterFunction = new SQSFunctionTestStarterFunction(testStateRepository);
+const sqsFunctionTestStarterFunction = new SQSFunctionTestStarterFunction(testStateRepository, {
+  log,
+});
 
 export const testStarterHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -114,7 +110,9 @@ class SQSFunctionTestPollerFunction extends TestPollerFunction {
   }
 }
 
-const sqsFunctionTestPollerFunction = new SQSFunctionTestPollerFunction(testStateRepository);
+const sqsFunctionTestPollerFunction = new SQSFunctionTestPollerFunction(testStateRepository, {
+  log,
+});
 
 export const testPollerHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -155,7 +153,7 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
   }
 }
 
-const receiveTestMessageFunction = new ReceiveTestMessageFunction();
+const receiveTestMessageFunction = new ReceiveTestMessageFunction({ log });
 
 export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -174,7 +172,7 @@ class DLQTestMessageFunction extends SQSFunction<TestMessage> {
   }
 }
 
-const dlqTestMessageFunction = new DLQTestMessageFunction();
+const dlqTestMessageFunction = new DLQTestMessageFunction({ log });
 
 export const dlqTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>

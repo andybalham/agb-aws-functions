@@ -32,7 +32,7 @@ export default abstract class SQSFunction<T> extends BaseFunction<
   private async handleMessageInternalAsync(message: T): Promise<void> {
     //
     if ((message as any).Event?.endsWith(':TestEvent')) {
-      if (SQSFunction.Log?.info) SQSFunction.Log.info('Skipping test event', { message });
+      if (this.baseProps.log?.info) this.baseProps.log.info('Skipping test event', { message });
       return;
     }
 

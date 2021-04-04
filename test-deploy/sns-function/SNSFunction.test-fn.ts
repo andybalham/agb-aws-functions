@@ -8,15 +8,11 @@ import middy from '@middy/core';
 import { SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
-import { ApiGatewayFunction, BaseFunction, SNSFunction } from '../../src';
+import { SNSFunction } from '../../src';
 import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
 import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
 import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
 import { DynamoDBClient } from '../../agb-aws-clients';
-
-BaseFunction.Log = log;
-ApiGatewayFunction.Log = log;
-SNSFunction.Log = log;
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testStateRepository = new TestStateRepository(
@@ -64,7 +60,9 @@ class SNSFunctionTestStarterFunction extends TestStarterFunction {
   }
 }
 
-const snsFunctionTestStarterFunction = new SNSFunctionTestStarterFunction(testStateRepository);
+const snsFunctionTestStarterFunction = new SNSFunctionTestStarterFunction(testStateRepository, {
+  log,
+});
 
 export const testStarterHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -104,7 +102,7 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
   }
 }
 
-const receiveTestMessageFunction = new ReceiveTestMessageFunction();
+const receiveTestMessageFunction = new ReceiveTestMessageFunction({ log });
 
 export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
@@ -144,7 +142,9 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
   }
 }
 
-const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction(testStateRepository);
+const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction(testStateRepository, {
+  log,
+});
 
 export const testPollerHandler = middy(
   async (event: any, context: Context): Promise<any> =>

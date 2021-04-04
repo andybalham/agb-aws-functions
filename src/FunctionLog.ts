@@ -1,7 +1,7 @@
 // TODO 28Feb21: Include this in code coverage
 /* istanbul ignore file */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export default class FunctionLog {
+export interface FunctionLog {
   //
   debug?: (message: string, params?: Record<string, any>) => void;
 
@@ -10,4 +10,8 @@ export default class FunctionLog {
   info?: (message: string, params?: Record<string, any>) => void;
 
   warn?: (message: string, params?: any, err?: Error) => void;
+}
+
+export class ConsoleFunctionLog implements FunctionLog {
+  // TODO 04Apr21: Provide a better implementation
 }

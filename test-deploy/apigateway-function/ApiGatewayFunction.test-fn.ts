@@ -6,17 +6,13 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import middy from '@middy/core';
 import httpErrorHandler from '@middy/http-error-handler';
-import Log from '@dazn/lambda-powertools-logger';
+import log from '@dazn/lambda-powertools-logger';
 import CorrelationIds from '@dazn/lambda-powertools-correlation-ids';
 import middyCorrelationIds from '@dazn/lambda-powertools-middleware-correlation-ids';
 import { Context } from 'aws-lambda/handler';
-import { ApiGatewayFunction, BaseFunction } from '../../src';
+import { ApiGatewayFunction } from '../../src';
 
 const correlationIdParams = { sampleDebugLogRate: 0.01 };
-
-BaseFunction.Log = Log;
-ApiGatewayFunction.Log = Log;
-ApiGatewayFunction.getCorrelationIds = CorrelationIds.get;
 
 export class ParameterTestRequest {
   x: string;
@@ -37,7 +33,10 @@ class ParameterTestFunction extends ApiGatewayFunction<
   }
 }
 
-const parameterTestFunction = new ParameterTestFunction();
+const parameterTestFunction = new ParameterTestFunction({
+  log,
+  correlationIdGetter: CorrelationIds.get,
+});
 
 export const parameterTestHandler = middy(
   async (event: any, context: Context): Promise<any> =>

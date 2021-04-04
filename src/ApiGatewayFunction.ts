@@ -11,7 +11,9 @@ import { HttpStatusCode } from './HttpStatusCode';
 
 export interface ApiGatewayFunctionProps extends BaseFunctionProps<APIGatewayProxyEvent> {
   responseStatusCode?: HttpStatusCode;
-  includeCorrelationAndRequestIds?: boolean;
+  correlationIdGetter?: () => {
+    [key: string]: any;
+  };
 }
 
 export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunction<
@@ -20,15 +22,11 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
   Context
 > {
   //
-  static getCorrelationIds?: () => any;
-
   requestId: string;
 
   correlationId: string;
 
-  props: ApiGatewayFunctionProps = {
-    includeCorrelationAndRequestIds: true,
-  };
+  props: ApiGatewayFunctionProps = {};
 
   constructor(props?: ApiGatewayFunctionProps) {
     super(props);
@@ -37,8 +35,8 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
 
   protected async handleInternalAsync(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     //
-    if (ApiGatewayFunction.getCorrelationIds) {
-      const correlationIds = ApiGatewayFunction.getCorrelationIds();
+    if (this.props.correlationIdGetter) {
+      const correlationIds = this.props.correlationIdGetter();
       this.requestId = correlationIds.awsRequestId;
       this.correlationId = correlationIds['x-correlation-id'];
     }
@@ -50,7 +48,7 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
     try {
       const response = await this.handleRequestAsync(request);
 
-      if (this.props.includeCorrelationAndRequestIds && response !== undefined) {
+      if (this.props.correlationIdGetter && response !== undefined) {
         (response as any).correlationId = this.correlationId;
         (response as any).requestId = this.requestId;
       }

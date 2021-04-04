@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable class-methods-use-this */
@@ -38,13 +37,14 @@ export default abstract class SNSFunction<T> extends BaseFunction<
 
   private async handleRecordAsync(eventRecord: SNSEventRecord): Promise<void> {
     //
-    if (SNSFunction.Log?.debug) SNSFunction.Log.debug('Handling event record', { eventRecord });
+    if (this.baseProps.log?.debug)
+      this.baseProps.log.debug('Handling event record', { eventRecord });
 
     const message = JSON.parse(eventRecord.Sns.Message);
 
     if (message.Event?.endsWith(':TestEvent')) {
-      if (SNSFunction.Log?.info)
-        SNSFunction.Log.info('Skipping test event', { messageEvent: message.Event });
+      if (this.baseProps.log?.info)
+        this.baseProps.log.info('Skipping test event', { messageEvent: message.Event });
       return;
     }
 

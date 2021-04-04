@@ -22,7 +22,7 @@ export default abstract class S3Function extends BaseFunction<S3Event, void, Con
     // eslint-disable-next-line no-restricted-syntax
     for (const eventRecord of event.Records) {
       //
-      if (S3Function.Log?.debug) S3Function.Log.debug('eventRecord', { eventRecord });
+      if (this.baseProps.log?.debug) this.baseProps.log.debug('eventRecord', { eventRecord });
 
       // TODO 25Nov20: Is there a test event from S3?
 

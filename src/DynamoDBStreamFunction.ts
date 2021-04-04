@@ -4,7 +4,7 @@
 import { Context } from 'aws-lambda/handler';
 import { DynamoDBStreamEvent } from 'aws-lambda/trigger/dynamodb-stream';
 import DynamoDB from 'aws-sdk/clients/dynamodb';
-import FunctionLog from './FunctionLog';
+import { FunctionLog } from './FunctionLog';
 
 export default abstract class DynamoDBStreamFunction<T> {
   //
