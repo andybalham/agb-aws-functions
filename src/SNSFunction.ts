@@ -54,7 +54,7 @@ export default abstract class SNSFunction<T> extends BaseFunction<
         try {
           await this.handleErrorAsync(error, event, eventRecord);
         } catch (errorHandlingError) {
-          this.logError('Error handling error', { message }, errorHandlingError);
+          this.logError('Error handling error', { event, eventRecord }, errorHandlingError);
         }
       }
     } else {

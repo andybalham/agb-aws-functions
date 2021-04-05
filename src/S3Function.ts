@@ -5,10 +5,9 @@ import { Context } from 'aws-lambda/handler';
 import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
 export interface S3FunctionProps extends BaseFunctionProps<S3Event> {
+  handleError?: boolean;
   logRecord?: boolean;
 }
-
-// TODO 01Apr21: Is there any real need for this function?
 
 export default abstract class S3Function extends BaseFunction<
   S3Event,
@@ -34,19 +33,45 @@ export default abstract class S3Function extends BaseFunction<
     }
 
     const recordPromises = event.Records.map((record) =>
-      this.handleEventRecordInternalAsync(record)
+      this.handleEventRecordInternalAsync(event, record)
     );
 
     return Promise.allSettled(recordPromises);
   }
 
-  private handleEventRecordInternalAsync(eventRecord: S3EventRecord): Promise<void> {
+  private async handleEventRecordInternalAsync(
+    event: S3Event,
+    eventRecord: S3EventRecord
+  ): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
       this.props.log.debug('eventRecord', { eventRecord });
+
+    if (this.props.handleError) {
+      try {
+        //
+        await this.handleEventRecordAsync(eventRecord);
+        //
+      } catch (error) {
+        try {
+          await this.handleErrorAsync(error, event, eventRecord);
+        } catch (errorHandlingError) {
+          this.logError('Error handling error', { event, eventRecord }, errorHandlingError);
+        }
+      }
+    } else {
+      //
+      await this.handleEventRecordAsync(eventRecord);
+      //
+    }
 
     return this.handleEventRecordAsync(eventRecord);
   }
 
   abstract handleEventRecordAsync(eventRecord: S3EventRecord): Promise<void>;
+
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  async handleErrorAsync(error: any, event: S3Event, eventRecord: S3EventRecord): Promise<void> {
+    this.logError('Error handling event record', { event, eventRecord }, error);
+  }
 }

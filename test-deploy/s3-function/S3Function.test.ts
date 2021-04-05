@@ -18,7 +18,11 @@ const testRunner = new TestRunner({
 
 describe('S3Function integration tests', () => {
   //
-  const theories = [{ scenario: Scenarios.HandlesObjectCreated }];
+  const theories = [
+    { scenario: Scenarios.HandlesObjectCreated },
+    { scenario: Scenarios.HandlesObjectCreatedBatch },
+    { scenario: Scenarios.HandlesError },
+  ];
 
   // eslint-disable-next-line no-restricted-syntax
   for (const theory of theories) {
