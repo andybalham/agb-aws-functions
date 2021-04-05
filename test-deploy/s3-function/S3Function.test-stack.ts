@@ -14,7 +14,7 @@ dotenv.config();
 // eslint-disable-next-line @typescript-eslint/naming-convention
 type s3FunctionStackProps = cdk.StackProps;
 
-const functionEntry = path.join(__dirname, '.', `s3Function.test-fn.ts`);
+const functionEntry = path.join(__dirname, '.', `S3Function.test-fn.ts`);
 
 export default class S3FunctionStack extends cdk.Stack {
   //
@@ -33,7 +33,7 @@ export default class S3FunctionStack extends cdk.Stack {
     super(scope, id, props);
 
     const testApi = new TestRestApi(this, 'S3Function', {
-      testApiKeyValue: process.env.s3_FUNCTION_API_KEY,
+      testApiKeyValue: process.env.S3_FUNCTION_API_KEY,
     });
 
     const testBucket = new s3.Bucket(this, 'TestBucket', {
@@ -48,28 +48,24 @@ export default class S3FunctionStack extends cdk.Stack {
     });
 
     testBucket.grantReadWrite(testStarterFunction);
-
     testApi.addTestPollerFunction(functionEntry);
 
-    // S3EventFunction
+    // HandleObjectCreated
 
-    const s3TestFunction = this.newS3TestFunction({
-      name: 'S3Test',
+    const handleObjectCreatedFunction = this.newS3TestFunction({
+      name: 'HandleObjectCreated',
       environment: {
         TEST_TABLE_NAME: testApi.testStateTable.tableName,
+        TEST_BUCKET_NAME: testBucket.bucketName,
       },
     });
 
     testBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
-      new s3Notifications.LambdaDestination(s3TestFunction)
+      new s3Notifications.LambdaDestination(handleObjectCreatedFunction)
     );
 
-    testBucket.addEventNotification(
-      s3.EventType.OBJECT_REMOVED,
-      new s3Notifications.LambdaDestination(s3TestFunction)
-    );
-
-    testApi.testStateTable.grantReadWriteData(s3TestFunction);
+    testBucket.grantRead(handleObjectCreatedFunction);
+    testApi.testStateTable.grantReadWriteData(handleObjectCreatedFunction);
   }
 }

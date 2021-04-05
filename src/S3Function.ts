@@ -24,7 +24,7 @@ export default abstract class S3Function extends BaseFunction<S3Event, void, Con
       //
       if (this.props.log?.debug) this.props.log.debug('eventRecord', { eventRecord: record });
 
-      // TODO 25Nov20: Is there a test event from S3?
+      // TODO 25Nov20: Is there a test event from S3? Yes: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
 
       // eslint-disable-next-line no-await-in-loop
       await this.handleEventRecordAsync(record);

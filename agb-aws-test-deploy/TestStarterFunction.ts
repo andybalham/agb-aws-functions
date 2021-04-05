@@ -4,7 +4,7 @@ import { TestStartRequest } from './TestRunner';
 import TestStateRepository from './TestStateRepository';
 
 export interface TestStarterFunctionProps extends ApiGatewayFunctionProps {
-  testParamsGetter?: (scenario: string) => any;
+  testParamsGetter?: (scenario: string) => Record<string, any>;
 }
 
 export default abstract class TestStarterFunction extends ApiGatewayFunction<
@@ -14,7 +14,7 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
   //
   testStarterProps: TestStarterFunctionProps = {};
 
-  scenarios: { [key: string]: () => Promise<any> } = {};
+  scenarios: { [key: string]: (testParams: Record<string, any>) => Promise<any> } = {};
 
   constructor(private testStateRepository: TestStateRepository, props?: TestStarterFunctionProps) {
     super(props);
@@ -23,21 +23,21 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
 
   async handleRequestAsync({ testScenario }: TestStartRequest): Promise<void> {
     //
-    const testParams = this.testStarterProps.correlationIdGetter
-      ? this.testStarterProps.correlationIdGetter
-      : undefined;
+    const testParams = this.testStarterProps.testParamsGetter
+      ? this.testStarterProps.testParamsGetter(testScenario)
+      : {};
 
     await this.testStateRepository.setStackScenarioAsync(testScenario, testParams);
 
-    await this.startTestAsync(testScenario);
+    await this.startTestAsync(testScenario, testParams);
   }
 
-  async startTestAsync(scenario: string): Promise<void> {
+  async startTestAsync(scenario: string, testParams: Record<string, any>): Promise<void> {
     //
     const scenarioHandler = this.scenarios[scenario];
 
     if (scenarioHandler === undefined) throw new Error('scenarioHandler === undefined');
 
-    await scenarioHandler();
+    await scenarioHandler(testParams);
   }
 }

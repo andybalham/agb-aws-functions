@@ -19,7 +19,7 @@ export default class TestStateRepository {
     this.testStateClient.sortKeyName = 'itemId';
   }
 
-  async setStackScenarioAsync(scenario: string, testParams?: any): Promise<void> {
+  async setStackScenarioAsync(scenario: string, params: Record<string, any>): Promise<void> {
     //
     const previousScenarioItems = await this.getStackScenarioItemsAsync(scenario);
 
@@ -35,7 +35,7 @@ export default class TestStateRepository {
     const currentStackScenario: TestStateItem = {
       scenario: 'current',
       itemId: 'scenario',
-      itemData: { scenario, params: testParams },
+      itemData: { scenario, params },
     };
 
     await this.testStateClient.putAsync(currentStackScenario);
@@ -44,10 +44,10 @@ export default class TestStateRepository {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async putCurrentScenarioItemAsync(itemId: string, itemData?: any): Promise<void> {
     //
-    const currentScenarioStateItem = await this.getCurrentScenarioItemAsync();
+    const currentScenario = await this.getCurrentScenarioAsync();
 
     const scenarioItem: TestStateItem = {
-      scenario: currentScenarioStateItem.itemData.scenario,
+      scenario: currentScenario.name,
       itemId,
       itemData,
     };
@@ -55,7 +55,10 @@ export default class TestStateRepository {
     await this.testStateClient.putAsync(scenarioItem);
   }
 
-  public async getCurrentScenarioItemAsync(): Promise<TestStateItem> {
+  public async getCurrentScenarioAsync(): Promise<{
+    name: string;
+    params: Record<string, any>;
+  }> {
     //
     const currentScenarioStateItem = await this.testStateClient.getAsync<TestStateItem>({
       scenario: 'current',
@@ -65,7 +68,10 @@ export default class TestStateRepository {
     if (currentScenarioStateItem === undefined)
       throw new Error('currentScenarioStateItem === undefined');
 
-    return currentScenarioStateItem;
+    return {
+      name: currentScenarioStateItem.itemData.scenario,
+      params: currentScenarioStateItem.itemData.params,
+    };
   }
 
   async getStackScenarioItemsAsync(scenario: string): Promise<TestStateItem[]> {

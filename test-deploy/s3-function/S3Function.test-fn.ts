@@ -11,9 +11,9 @@ import log from '@dazn/lambda-powertools-logger';
 import { S3EventRecord } from 'aws-lambda';
 import { S3Function } from '../../src';
 import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
-import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
-import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
+import TestStateRepository from '../../agb-aws-test-deploy/TestStateRepository';
 import { DynamoDBClient } from '../../agb-aws-clients';
+import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
 
 const s3Client = new S3Client(process.env.TEST_BUCKET_NAME);
 const testStateRepository = new TestStateRepository(
@@ -21,28 +21,31 @@ const testStateRepository = new TestStateRepository(
 );
 
 export enum Scenarios {
-  HandlesMessage = 'handles_message',
-  HandlesMessageBatch = 'handles_message_batch',
-  HandlesError = 'handles_error',
+  HandlesObjectCreated = 'handles_object_created',
 }
 
 // Test starter function
 
 class S3FunctionTestStarterFunction extends TestStarterFunction {
-  //
   constructor() {
-    super(testStateRepository, { log });
-  }
+    super(testStateRepository, {
+      log,
+      testParamsGetter: (scenario) => {
+        switch (scenario) {
+          case Scenarios.HandlesObjectCreated:
+            return { instanceId: Date.now().toString() };
+          default:
+            return {};
+        }
+      },
+    });
 
-  async startTestAsync(scenario: string): Promise<void> {
-    //
-    await s3Client.putObjectAsync('key', {});
-
-    switch (scenario) {
-      //
-      default:
-        throw new Error(`Unhandled scenario: ${scenario}`);
-    }
+    this.scenarios = {
+      [Scenarios.HandlesObjectCreated]: async (testParams): Promise<void> =>
+        s3Client.putObjectAsync(Scenarios.HandlesObjectCreated, {
+          instanceId: testParams.instanceId,
+        }),
+    };
   }
 }
 
@@ -53,44 +56,21 @@ export const testStarterHandler = middy(
     s3FunctionTestStarterFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
 
-// Receive test message function
-
-class S3TestFunction extends S3Function {
-  //
-  constructor() {
-    super({ log });
-  }
-
-  async handleEventRecordAsync(eventRecord: S3EventRecord): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log(`eventRecord: ${JSON.stringify(eventRecord)}`);
-  }
-}
-
-const s3TestFunction = new S3TestFunction();
-
-export const receiveTestMessageHandler = middy(
-  async (event: any, context: Context): Promise<any> => s3TestFunction.handleAsync(event, context)
-);
-
 // Test poller function
 
 class S3FunctionTestPollerFunction extends TestPollerFunction {
-  //
   constructor() {
     super(testStateRepository, { log });
-  }
 
-  async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
-    //
-    // eslint-disable-next-line no-console
-    console.log(`scenarioItems: ${JSON.stringify(scenarioItems)}`);
-
-    switch (scenario) {
-      //
-      default:
-        throw new Error(`Unhandled scenario: ${scenario}`);
-    }
+    this.scenarios = {
+      [Scenarios.HandlesObjectCreated]: (scenarioItems, testParams): TestPollResponse => ({
+        success:
+          scenarioItems.length === 1 &&
+          scenarioItems[0].itemId === 'result' &&
+          scenarioItems[0].itemData?.instanceId === testParams.instanceId &&
+          scenarioItems[0].itemData?.expectedEventName,
+      }),
+    };
   }
 }
 
@@ -100,3 +80,41 @@ export const testPollerHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     s3FunctionTestPollerFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
+
+// HandleObjectCreated
+
+class HandleObjectCreatedFunction extends S3Function {
+  //
+  constructor() {
+    super({ log });
+  }
+
+  async handleEventRecordAsync(eventRecord: S3EventRecord): Promise<void> {
+    //
+    const currentScenario = await testStateRepository.getCurrentScenarioAsync();
+
+    switch (currentScenario.name) {
+      //
+      case Scenarios.HandlesObjectCreated:
+        {
+          const s3Object = await s3Client.getObjectAsync(eventRecord.s3.object.key);
+
+          await testStateRepository.putCurrentScenarioItemAsync('result', {
+            expectedEventName: eventRecord.eventName.startsWith('ObjectCreated:'),
+            instanceId: s3Object.instanceId,
+          });
+        }
+        break;
+
+      default:
+        throw new Error(`Unhandled scenario: ${currentScenario.name}`);
+    }
+  }
+}
+
+const handleObjectCreatedFunction = new HandleObjectCreatedFunction();
+
+export const handleObjectCreatedHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    handleObjectCreatedFunction.handleAsync(event, context)
+);
