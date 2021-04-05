@@ -8,11 +8,11 @@ export interface TestRunResult {
 }
 
 export interface TestStartRequest {
-  testScenario: string;
+  scenario: string;
 }
 
 export interface TestPollRequest {
-  testScenario: string;
+  scenario: string;
 }
 
 export interface TestPollResponse {
@@ -29,10 +29,10 @@ export default class TestRunner {
     }
   ) {}
 
-  async runTestAsync(testScenario: string, timeoutSeconds = 6): Promise<TestRunResult> {
+  async runTestAsync(scenario: string, timeoutSeconds = 6): Promise<TestRunResult> {
     //
     const testStartRequest: TestStartRequest = {
-      testScenario,
+      scenario,
     };
 
     const startResponse = await axios.post<void>(
@@ -44,12 +44,12 @@ export default class TestRunner {
     if (startResponse.status !== 200) {
       return {
         success: false,
-        message: `${testScenario} returned unexpected HTTP status for start: ${startResponse.status}`,
+        message: `${scenario} returned unexpected HTTP status for start: ${startResponse.status}`,
       };
     }
 
     const testPollRequest: TestPollRequest = {
-      testScenario,
+      scenario,
     };
 
     const expiryTime = Date.now() + 1000 * timeoutSeconds;
@@ -68,7 +68,7 @@ export default class TestRunner {
       if (pollResponse.status !== 200) {
         return {
           success: false,
-          message: `${testScenario} returned unexpected HTTP status for poll: ${pollResponse.status}`,
+          message: `${scenario} returned unexpected HTTP status for poll: ${pollResponse.status}`,
         };
       }
 
@@ -79,7 +79,7 @@ export default class TestRunner {
 
     return {
       success: false,
-      message: `${testScenario} timed out`,
+      message: `${scenario} timed out`,
     };
   }
 

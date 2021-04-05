@@ -26,11 +26,13 @@ export default abstract class DynamoDBStreamFunction<T> extends BaseFunction<
   }
 
   async handleAsync(event: DynamoDBStreamEvent): Promise<PromiseSettledResult<void>[]> {
-    const recordPromises = event.Records.map((record) => this.processRecordInternalAsync(record));
+    const recordPromises = event.Records.map((record) =>
+      this.processEventRecordInternalAsync(record)
+    );
     return Promise.allSettled(recordPromises);
   }
 
-  private async processRecordInternalAsync(eventRecord: DynamoDBRecord): Promise<void> {
+  private async processEventRecordInternalAsync(eventRecord: DynamoDBRecord): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
       this.props.log.debug('Processing record', { eventRecord });

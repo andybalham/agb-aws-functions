@@ -6,6 +6,7 @@ import { SNSEvent, SNSEventRecord } from 'aws-lambda/trigger/sns';
 import BaseFunction, { BaseFunctionProps } from './BaseFunction';
 
 export interface SNSFunctionProps extends BaseFunctionProps<SNSEvent> {
+  // Handling errors allows us to shortcut the following: https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html
   handleError?: boolean;
   logRecord?: boolean;
 }
@@ -27,11 +28,11 @@ export default abstract class SNSFunction<T> extends BaseFunction<
   }
 
   protected async handleInternalAsync(event: SNSEvent): Promise<PromiseSettledResult<void>[]> {
-    const recordPromises = event.Records.map((record) => this.handleRecordAsync(record));
+    const recordPromises = event.Records.map((record) => this.handleRecordAsync(event, record));
     return Promise.allSettled(recordPromises);
   }
 
-  private async handleRecordAsync(eventRecord: SNSEventRecord): Promise<void> {
+  private async handleRecordAsync(event: SNSEvent, eventRecord: SNSEventRecord): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
       this.props.log.debug('Handling event record', { eventRecord });
@@ -51,7 +52,7 @@ export default abstract class SNSFunction<T> extends BaseFunction<
         //
       } catch (error) {
         try {
-          await this.handleErrorAsync(error, message);
+          await this.handleErrorAsync(error, event, eventRecord);
         } catch (errorHandlingError) {
           this.logError('Error handling error', { message }, errorHandlingError);
         }
@@ -65,7 +66,7 @@ export default abstract class SNSFunction<T> extends BaseFunction<
 
   abstract handleMessageAsync(message: T): Promise<void>;
 
-  protected async handleErrorAsync(error: any, message: T): Promise<void> {
-    this.logError('Error handling message', { message }, error);
+  async handleErrorAsync(error: any, event: SNSEvent, eventRecord: SNSEventRecord): Promise<void> {
+    this.logError('Error handling event record', { event, eventRecord }, error);
   }
 }

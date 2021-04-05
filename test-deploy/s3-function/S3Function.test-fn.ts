@@ -10,10 +10,13 @@ import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import { S3EventRecord } from 'aws-lambda';
 import { S3Function } from '../../src';
-import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
-import TestStateRepository from '../../agb-aws-test-deploy/TestStateRepository';
+import {
+  TestPollerFunction,
+  TestPollResponse,
+  TestStarterFunction,
+  TestStateRepository,
+} from '../../agb-aws-test-deploy';
 import { DynamoDBClient } from '../../agb-aws-clients';
-import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
 
 const s3Client = new S3Client(process.env.TEST_BUCKET_NAME);
 const testStateRepository = new TestStateRepository(
@@ -30,15 +33,15 @@ class S3FunctionTestStarterFunction extends TestStarterFunction {
   constructor() {
     super(testStateRepository, { log });
 
-    this.scenarioParams = {
+    this.testParams = {
       [Scenarios.HandlesObjectCreated]: (): Record<string, any> => ({
         instanceId: `Instance-${Date.now()}`,
       }),
     };
 
-    this.scenarios = {
-      [Scenarios.HandlesObjectCreated]: async ({ name, params }): Promise<void> =>
-        s3Client.putObjectAsync(name, { instanceId: params.instanceId }),
+    this.tests = {
+      [Scenarios.HandlesObjectCreated]: async ({ scenario, params }): Promise<void> =>
+        s3Client.putObjectAsync(scenario, { instanceId: params.instanceId }),
     };
   }
 }
@@ -56,7 +59,7 @@ class S3FunctionTestPollerFunction extends TestPollerFunction {
   constructor() {
     super(testStateRepository, { log });
 
-    this.scenarios = {
+    this.tests = {
       [Scenarios.HandlesObjectCreated]: ({ items, params }): TestPollResponse => ({
         success:
           items.length === 1 &&
@@ -85,23 +88,23 @@ class HandleObjectCreatedFunction extends S3Function {
 
   async handleEventRecordAsync(eventRecord: S3EventRecord): Promise<void> {
     //
-    const currentScenario = await testStateRepository.getCurrentScenarioAsync();
+    const currentScenario = await testStateRepository.getCurrentTestAsync();
 
-    switch (currentScenario.name) {
+    switch (currentScenario.scenario) {
       //
       case Scenarios.HandlesObjectCreated:
         {
           const s3Object = await s3Client.getObjectAsync(eventRecord.s3.object.key);
 
-          await testStateRepository.putCurrentScenarioItemAsync('result', {
-            expectedEventName: eventRecord.eventName.startsWith('ObjectCreated:'),
+          await testStateRepository.putCurrentTestItemAsync('result', {
             instanceId: s3Object.instanceId,
+            expectedEventName: eventRecord.eventName.startsWith('ObjectCreated:'),
           });
         }
         break;
 
       default:
-        throw new Error(`Unhandled scenario: ${currentScenario.name}`);
+        throw new Error(`Unhandled scenario: ${currentScenario.scenario}`);
     }
   }
 }

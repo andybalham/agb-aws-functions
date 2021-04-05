@@ -3,9 +3,7 @@ import { ApiGatewayFunctionProps } from '../src/ApiGatewayFunction';
 import { TestStartRequest } from './TestRunner';
 import TestStateRepository from './TestStateRepository';
 
-export interface TestStarterFunctionProps extends ApiGatewayFunctionProps {
-  testParamsGetter?: (scenario: string) => Record<string, any>;
-}
+export type TestStarterFunctionProps = ApiGatewayFunctionProps;
 
 export default abstract class TestStarterFunction extends ApiGatewayFunction<
   TestStartRequest,
@@ -14,10 +12,10 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
   //
   testStarterProps: TestStarterFunctionProps = {};
 
-  scenarioParams: { [key: string]: () => Record<string, any> } = {};
+  testParams: { [scenario: string]: () => Record<string, any> } = {};
 
-  scenarios: {
-    [key: string]: (scenario: { name: string; params: Record<string, any> }) => Promise<any>;
+  tests: {
+    [scenario: string]: (test: { scenario: string; params: Record<string, any> }) => Promise<any>;
   } = {};
 
   constructor(private testStateRepository: TestStateRepository, props?: TestStarterFunctionProps) {
@@ -25,23 +23,23 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
     this.testStarterProps = { ...this.testStarterProps, ...props };
   }
 
-  async handleRequestAsync({ testScenario }: TestStartRequest): Promise<void> {
+  async handleRequestAsync({ scenario }: TestStartRequest): Promise<void> {
     //
-    const scenarioParamGetter = this.scenarioParams[testScenario];
+    const scenarioParamGetter = this.testParams[scenario];
 
     const testParams = scenarioParamGetter ? scenarioParamGetter() : {};
 
-    await this.testStateRepository.setStackScenarioAsync(testScenario, testParams);
+    await this.testStateRepository.setCurrentTestAsync(scenario, testParams);
 
-    await this.startTestAsync(testScenario, testParams);
+    await this.startTestAsync(scenario, testParams);
   }
 
   async startTestAsync(scenario: string, params: Record<string, any>): Promise<void> {
     //
-    const scenarioHandler = this.scenarios[scenario];
+    const testStarter = this.tests[scenario];
 
-    if (scenarioHandler === undefined) throw new Error('scenarioHandler === undefined');
+    if (testStarter === undefined) throw new Error(`testStarter === undefined for ${scenario}`);
 
-    await scenarioHandler({ name: scenario, params });
+    await testStarter({ scenario, params });
   }
 }

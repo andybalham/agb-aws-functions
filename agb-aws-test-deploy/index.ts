@@ -7,9 +7,10 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
 import TestRestApi from './TestRestApi';
 import TestStateDynamoDBTable from './TestStateDynamoDBTable';
-import TestRunner from './TestRunner';
+import TestRunner, { TestPollResponse } from './TestRunner';
 import TestStarterFunction from './TestStarterFunction';
 import TestPollerFunction from './TestPollerFunction';
+import TestStateRepository from './TestStateRepository';
 
 const newTestFunction = ({
   scope,
@@ -41,5 +42,7 @@ export {
   TestRestApi,
   TestStarterFunction,
   TestPollerFunction,
+  TestPollResponse,
   TestStateDynamoDBTable,
+  TestStateRepository,
 };

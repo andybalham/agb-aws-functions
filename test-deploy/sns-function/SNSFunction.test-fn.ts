@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable import/prefer-default-export */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable max-classes-per-file */
 import { Context } from 'aws-lambda/handler';
@@ -8,11 +6,15 @@ import middy from '@middy/core';
 import { SNSClient } from '@andybalham/agb-aws-clients';
 import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
+import { SNSEvent, SNSEventRecord } from 'aws-lambda/trigger/sns';
 import { SNSFunction } from '../../src';
-import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
-import TestStateRepository from '../../agb-aws-test-deploy/TestStateRepository';
+import {
+  TestPollerFunction,
+  TestPollResponse,
+  TestStarterFunction,
+  TestStateRepository,
+} from '../../agb-aws-test-deploy';
 import { DynamoDBClient } from '../../agb-aws-clients';
-import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testStateRepository = new TestStateRepository(
@@ -38,19 +40,19 @@ class SNSFunctionTestStarterFunction extends TestStarterFunction {
     //
     super(testStateRepository, { log });
 
-    this.scenarioParams = {
+    this.testParams = {
       [Scenarios.HandlesMessageBatch]: (): Record<string, any> => ({ batchSize: 10 }),
     };
 
-    this.scenarios = {
+    this.tests = {
       //
-      [Scenarios.HandlesMessage]: async ({ name: scenario }): Promise<any> =>
+      [Scenarios.HandlesMessage]: async ({ scenario }): Promise<any> =>
         snsClient.publishMessageAsync({ scenario }),
 
-      [Scenarios.HandlesError]: async ({ name: scenario }): Promise<any> =>
+      [Scenarios.HandlesError]: async ({ scenario }): Promise<any> =>
         snsClient.publishMessageAsync({ scenario }),
 
-      [Scenarios.HandlesMessageBatch]: async ({ name: scenario, params }): Promise<any> => {
+      [Scenarios.HandlesMessageBatch]: async ({ scenario, params }): Promise<any> => {
         const publishMessagePromises = Array.from(Array(params.batchSize).keys()).map((index) =>
           snsClient.publishMessageAsync({ scenario, index })
         );
@@ -75,7 +77,7 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
     //
     super(testStateRepository, { log });
 
-    this.scenarios = {
+    this.tests = {
       //
       [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
         success: items.length === 1 && items[0].itemData.success === true,
@@ -117,11 +119,11 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putCurrentScenarioItemAsync('message', { success: true });
+        await testStateRepository.putCurrentTestItemAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+        await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -134,9 +136,9 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     }
   }
 
-  async handleErrorAsync(error: any, message: TestMessage): Promise<void> {
-    await super.handleErrorAsync(error, message);
-    await testStateRepository.putCurrentScenarioItemAsync('result', {
+  async handleErrorAsync(error: any, event: SNSEvent, eventRecord: SNSEventRecord): Promise<void> {
+    await super.handleErrorAsync(error, event, eventRecord);
+    await testStateRepository.putCurrentTestItemAsync('result', {
       errorMessage: error.message,
     });
   }

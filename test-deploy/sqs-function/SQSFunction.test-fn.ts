@@ -9,9 +9,12 @@ import httpErrorHandler from '@middy/http-error-handler';
 import log from '@dazn/lambda-powertools-logger';
 import sqsBatch from '@middy/sqs-partial-batch-failure';
 import { SQSFunction } from '../../src';
-import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
-import TestStateRepository from '../../agb-aws-test-deploy/TestStateRepository';
-import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
+import {
+  TestPollerFunction,
+  TestPollResponse,
+  TestStarterFunction,
+  TestStateRepository,
+} from '../../agb-aws-test-deploy';
 import { DynamoDBClient } from '../../agb-aws-clients';
 
 export enum Scenarios {
@@ -71,36 +74,34 @@ export const testStarterHandler = middy(
 
 class SQSFunctionTestPollerFunction extends TestPollerFunction {
   //
-  async pollTestAsync({ name: scenario, items: scenarioItems }): Promise<TestPollResponse> {
+  async pollTestAsync({ scenario, items }): Promise<TestPollResponse> {
     //
     switch (scenario) {
       //
       case Scenarios.HandlesMessage:
         return {
-          success: scenarioItems[0].itemData.success === true,
+          success: items[0].itemData.success === true,
         };
 
       case Scenarios.HandlesMessageBatch: {
-        if (scenarioItems.length < 10) {
+        if (items.length < 10) {
           return {};
         }
         return {
-          success: scenarioItems.every((item) => item.itemData.success === true),
+          success: items.every((item) => item.itemData.success === true),
         };
       }
 
       case Scenarios.HandlesMessageBatchError: {
         // eslint-disable-next-line no-console
-        console.log(`scenarioItems: ${JSON.stringify(scenarioItems)}`);
-        if (scenarioItems.length < 10) {
+        console.log(`scenarioItems: ${JSON.stringify(items)}`);
+        if (items.length < 10) {
           // eslint-disable-next-line no-console
           console.log(`Still waiting for 10`);
           return {};
         }
         return {
-          success: scenarioItems.every(
-            (item) => item.itemData.success === (item.itemId !== 'message-7')
-          ),
+          success: items.every((item) => item.itemData.success === (item.itemId !== 'message-7')),
         };
       }
 
@@ -128,11 +129,11 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putCurrentScenarioItemAsync('message', { success: true });
+        await testStateRepository.putCurrentTestItemAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+        await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -141,7 +142,7 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
         if (message.index === 7) {
           throw new Error(`Unlucky 7`);
         } else {
-          await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+          await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
             success: true,
           });
         }
@@ -166,7 +167,7 @@ class DLQTestMessageFunction extends SQSFunction<TestMessage> {
   //
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    await testStateRepository.putCurrentScenarioItemAsync(`message-${message.index}`, {
+    await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
       success: false,
     });
   }

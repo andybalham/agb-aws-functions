@@ -24,11 +24,11 @@ export default abstract class SQSFunction<T> extends BaseFunction<
   }
 
   async handleInternalAsync(event: SQSEvent): Promise<PromiseSettledResult<void>[]> {
-    const recordPromises = event.Records.map((record) => this.handleMessageInternalAsync(record));
+    const recordPromises = event.Records.map((record) => this.handleRecordAsync(record));
     return Promise.allSettled(recordPromises);
   }
 
-  private async handleMessageInternalAsync(record: SQSRecord): Promise<void> {
+  private async handleRecordAsync(record: SQSRecord): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
       this.props.log.debug('Handling event record', { record });

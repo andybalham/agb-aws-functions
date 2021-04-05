@@ -59,6 +59,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     });
 
     testTopic.addSubscription(new subs.LambdaSubscription(receiveTestMessageFunction));
+
     testApi.testStateTable.grantReadWriteData(receiveTestMessageFunction);
   }
 }

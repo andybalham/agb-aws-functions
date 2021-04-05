@@ -60,8 +60,7 @@ export default class S3FunctionStack extends cdk.Stack {
       },
     });
 
-    testBucket.addEventNotification(
-      s3.EventType.OBJECT_CREATED,
+    testBucket.addObjectCreatedNotification(
       new s3Notifications.LambdaDestination(handleObjectCreatedFunction)
     );
 
