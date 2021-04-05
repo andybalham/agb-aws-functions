@@ -10,7 +10,7 @@ import log from '@dazn/lambda-powertools-logger';
 import sqsBatch from '@middy/sqs-partial-batch-failure';
 import { SQSFunction } from '../../src';
 import { TestPollerFunction, TestStarterFunction } from '../../agb-aws-test-deploy';
-import TestStateRepository, { TestStateItem } from '../../agb-aws-test-deploy/TestStateRepository';
+import TestStateRepository from '../../agb-aws-test-deploy/TestStateRepository';
 import { TestPollResponse } from '../../agb-aws-test-deploy/TestRunner';
 import { DynamoDBClient } from '../../agb-aws-clients';
 
@@ -71,7 +71,7 @@ export const testStarterHandler = middy(
 
 class SQSFunctionTestPollerFunction extends TestPollerFunction {
   //
-  async pollTestAsync(scenario: string, scenarioItems: TestStateItem[]): Promise<TestPollResponse> {
+  async pollTestAsync({ name: scenario, items: scenarioItems }): Promise<TestPollResponse> {
     //
     switch (scenario) {
       //

@@ -38,17 +38,21 @@ class SNSFunctionTestStarterFunction extends TestStarterFunction {
     //
     super(testStateRepository, { log });
 
+    this.scenarioParams = {
+      [Scenarios.HandlesMessageBatch]: (): Record<string, any> => ({ batchSize: 10 }),
+    };
+
     this.scenarios = {
       //
-      [Scenarios.HandlesMessage]: async (): Promise<any> =>
-        snsClient.publishMessageAsync({ scenario: Scenarios.HandlesMessage }),
+      [Scenarios.HandlesMessage]: async ({ name: scenario }): Promise<any> =>
+        snsClient.publishMessageAsync({ scenario }),
 
-      [Scenarios.HandlesError]: async (): Promise<any> =>
-        snsClient.publishMessageAsync({ scenario: Scenarios.HandlesError }),
+      [Scenarios.HandlesError]: async ({ name: scenario }): Promise<any> =>
+        snsClient.publishMessageAsync({ scenario }),
 
-      [Scenarios.HandlesMessageBatch]: async (): Promise<any> => {
-        const publishMessagePromises = Array.from(Array(10).keys()).map((index) =>
-          snsClient.publishMessageAsync({ scenario: Scenarios.HandlesMessageBatch, index })
+      [Scenarios.HandlesMessageBatch]: async ({ name: scenario, params }): Promise<any> => {
+        const publishMessagePromises = Array.from(Array(params.batchSize).keys()).map((index) =>
+          snsClient.publishMessageAsync({ scenario, index })
         );
         return await Promise.all(publishMessagePromises);
       },
@@ -73,21 +77,20 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
 
     this.scenarios = {
       //
-      [Scenarios.HandlesMessage]: (scenarioItems): TestPollResponse => ({
-        success: scenarioItems.length === 1 && scenarioItems[0].itemData.success === true,
+      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
+        success: items.length === 1 && items[0].itemData.success === true,
       }),
 
-      [Scenarios.HandlesError]: (scenarioItems): TestPollResponse => ({
-        success:
-          scenarioItems.length === 1 && scenarioItems[0].itemData.errorMessage === 'Test error',
+      [Scenarios.HandlesError]: ({ items }): TestPollResponse => ({
+        success: items.length === 1 && items[0].itemData.errorMessage === 'Test error',
       }),
 
-      [Scenarios.HandlesMessageBatch]: (scenarioItems): TestPollResponse => {
-        if (scenarioItems.length < 10) {
+      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
+        if (items.length < params.batchSize) {
           return {};
         }
         return {
-          success: scenarioItems.every((item) => item.itemData.success === true),
+          success: items.every((item) => item.itemData.success === true),
         };
       },
     };

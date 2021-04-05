@@ -28,23 +28,17 @@ export enum Scenarios {
 
 class S3FunctionTestStarterFunction extends TestStarterFunction {
   constructor() {
-    super(testStateRepository, {
-      log,
-      testParamsGetter: (scenario) => {
-        switch (scenario) {
-          case Scenarios.HandlesObjectCreated:
-            return { instanceId: Date.now().toString() };
-          default:
-            return {};
-        }
-      },
-    });
+    super(testStateRepository, { log });
+
+    this.scenarioParams = {
+      [Scenarios.HandlesObjectCreated]: (): Record<string, any> => ({
+        instanceId: `Instance-${Date.now()}`,
+      }),
+    };
 
     this.scenarios = {
-      [Scenarios.HandlesObjectCreated]: async (testParams): Promise<void> =>
-        s3Client.putObjectAsync(Scenarios.HandlesObjectCreated, {
-          instanceId: testParams.instanceId,
-        }),
+      [Scenarios.HandlesObjectCreated]: async ({ name, params }): Promise<void> =>
+        s3Client.putObjectAsync(name, { instanceId: params.instanceId }),
     };
   }
 }
@@ -63,12 +57,12 @@ class S3FunctionTestPollerFunction extends TestPollerFunction {
     super(testStateRepository, { log });
 
     this.scenarios = {
-      [Scenarios.HandlesObjectCreated]: (scenarioItems, testParams): TestPollResponse => ({
+      [Scenarios.HandlesObjectCreated]: ({ items, params }): TestPollResponse => ({
         success:
-          scenarioItems.length === 1 &&
-          scenarioItems[0].itemId === 'result' &&
-          scenarioItems[0].itemData?.instanceId === testParams.instanceId &&
-          scenarioItems[0].itemData?.expectedEventName,
+          items.length === 1 &&
+          items[0].itemId === 'result' &&
+          items[0].itemData?.instanceId === params.instanceId &&
+          items[0].itemData?.expectedEventName,
       }),
     };
   }

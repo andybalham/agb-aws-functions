@@ -10,7 +10,12 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
 > {
   //
   scenarios: {
-    [key: string]: (scenarioItems: TestStateItem[], testParams?: any) => TestPollResponse;
+    [key: string]: (scenario: {
+      name: string;
+      params: Record<string, any>;
+      startTime: number;
+      items: TestStateItem[];
+    }) => TestPollResponse;
   } = {};
 
   constructor(private testStateRepository: TestStateRepository, props?: ApiGatewayFunctionProps) {
@@ -19,7 +24,7 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
 
   async handleRequestAsync({ testScenario }: TestPollRequest): Promise<TestPollResponse> {
     //
-    const currentScenarioItem = await this.testStateRepository.getCurrentScenarioAsync();
+    const currentScenario = await this.testStateRepository.getCurrentScenarioAsync();
 
     const scenarioItems = await this.testStateRepository.getStackScenarioItemsAsync(testScenario);
 
@@ -27,19 +32,20 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
       return {};
     }
 
-    return this.pollTestAsync(testScenario, scenarioItems, currentScenarioItem.params);
+    return this.pollTestAsync({ ...currentScenario, items: scenarioItems });
   }
 
-  async pollTestAsync(
-    scenario: string,
-    scenarioItems: TestStateItem[],
-    testParams: Record<string, any>
-  ): Promise<TestPollResponse> {
+  async pollTestAsync(scenario: {
+    name: string;
+    params: Record<string, any>;
+    startTime: number;
+    items: TestStateItem[];
+  }): Promise<TestPollResponse> {
     //
-    const scenarioHandler = this.scenarios[scenario];
+    const scenarioHandler = this.scenarios[scenario.name];
 
     if (scenarioHandler === undefined) throw new Error('scenarioHandler === undefined');
 
-    return scenarioHandler(scenarioItems, testParams);
+    return scenarioHandler(scenario);
   }
 }

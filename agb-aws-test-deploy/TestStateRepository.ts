@@ -35,7 +35,7 @@ export default class TestStateRepository {
     const currentStackScenario: TestStateItem = {
       scenario: 'current',
       itemId: 'scenario',
-      itemData: { scenario, params },
+      itemData: { scenario, params, startTime: Date.now() },
     };
 
     await this.testStateClient.putAsync(currentStackScenario);
@@ -58,6 +58,7 @@ export default class TestStateRepository {
   public async getCurrentScenarioAsync(): Promise<{
     name: string;
     params: Record<string, any>;
+    startTime: number;
   }> {
     //
     const currentScenarioStateItem = await this.testStateClient.getAsync<TestStateItem>({
@@ -71,6 +72,7 @@ export default class TestStateRepository {
     return {
       name: currentScenarioStateItem.itemData.scenario,
       params: currentScenarioStateItem.itemData.params,
+      startTime: currentScenarioStateItem.itemData.startTime,
     };
   }
 
