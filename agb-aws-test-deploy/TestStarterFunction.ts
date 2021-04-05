@@ -14,6 +14,8 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
   //
   testStarterProps: TestStarterFunctionProps = {};
 
+  scenarios: { [key: string]: () => Promise<any> } = {};
+
   constructor(private testStateRepository: TestStateRepository, props?: TestStarterFunctionProps) {
     super(props);
     this.testStarterProps = { ...this.testStarterProps, ...props };
@@ -30,5 +32,12 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
     await this.startTestAsync(testScenario);
   }
 
-  abstract startTestAsync(scenario: string): Promise<void>;
+  async startTestAsync(scenario: string): Promise<void> {
+    //
+    const scenarioHandler = this.scenarios[scenario];
+
+    if (scenarioHandler === undefined) throw new Error('scenarioHandler === undefined');
+
+    await scenarioHandler();
+  }
 }

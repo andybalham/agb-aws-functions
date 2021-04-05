@@ -9,6 +9,10 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
   TestPollResponse
 > {
   //
+  scenarios: {
+    [key: string]: (scenarioItems: TestStateItem[], testParams?: any) => TestPollResponse;
+  } = {};
+
   constructor(private testStateRepository: TestStateRepository, props?: ApiGatewayFunctionProps) {
     super(props);
   }
@@ -26,10 +30,17 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
     return this.pollTestAsync(testScenario, scenarioItems, currentScenarioItem.itemData);
   }
 
-  abstract pollTestAsync(
+  async pollTestAsync(
     scenario: string,
     scenarioItems: TestStateItem[],
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     testParams?: any
-  ): Promise<TestPollResponse>;
+  ): Promise<TestPollResponse> {
+    //
+    const scenarioHandler = this.scenarios[scenario];
+
+    if (scenarioHandler === undefined) throw new Error('scenarioHandler === undefined');
+
+    return scenarioHandler(scenarioItems, testParams);
+  }
 }
