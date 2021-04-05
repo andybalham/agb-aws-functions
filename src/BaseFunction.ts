@@ -30,10 +30,10 @@ export default abstract class BaseFunction<TEvent, TResult, TContext extends ICo
   async handleAsync(event: TEvent, context?: TContext): Promise<TResult> {
     //
     if (this.baseProps.logEvent) {
-      if (this.baseProps.eventLoggerOverride) {
-        this.baseProps.eventLoggerOverride(event);
-      } else if (this.baseProps.log?.debug) {
-        this.baseProps.log.debug('Handling event', { event });
+      try {
+        await this.logEventAsync(event);
+      } catch (error) {
+        this.logError('Error logging event', event, error);
       }
     }
 
@@ -47,7 +47,13 @@ export default abstract class BaseFunction<TEvent, TResult, TContext extends ICo
 
   protected abstract handleInternalAsync(event: TEvent, context?: TContext): Promise<TResult>;
 
-  protected logError(message: string, handledData: any, error: any): void {
+  async logEventAsync(event: TEvent): Promise<void> {
+    if (this.baseProps.log?.debug) {
+      this.baseProps.log.debug('Handling event', { event });
+    }
+  }
+
+  logError(message: string, handledData: any, error: any): void {
     if (this.baseProps.log?.error) {
       this.baseProps.log.error(message, handledData, error);
     } else {
