@@ -25,7 +25,10 @@ export default abstract class DynamoDBStreamFunction<T> extends BaseFunction<
     this.props = { ...this.props, ...props };
   }
 
-  async handleAsync(event: DynamoDBStreamEvent): Promise<PromiseSettledResult<void>[]> {
+  protected async handleInternalAsync(
+    event: DynamoDBStreamEvent
+  ): Promise<PromiseSettledResult<void>[]> {
+    //
     const recordPromises = event.Records.map((record) =>
       this.processEventRecordInternalAsync(record)
     );
