@@ -37,87 +37,41 @@ export interface TestMessage {
 
 class SQSFunctionTestStarterFunction extends TestStarterFunction {
   //
-  async startTestAsync(scenario: string): Promise<void> {
-    //
-    switch (scenario) {
+  constructor() {
+    super(testStateRepository, { log });
+
+    this.testParams = {
+      [Scenarios.HandlesMessageBatch]: (): Record<string, any> => ({ batchSize: 10 }),
+      [Scenarios.HandlesMessageBatchError]: (): Record<string, any> => ({ batchSize: 10 }),
+    };
+
+    this.tests = {
       //
-      case Scenarios.HandlesMessage:
-        await sqsClient.sendMessageAsync({ scenario });
-        break;
+      [Scenarios.HandlesMessage]: ({ scenario }): Promise<any> =>
+        sqsClient.sendMessageAsync({ scenario }),
 
-      case Scenarios.HandlesMessageBatch:
-      case Scenarios.HandlesMessageBatchError:
-        {
-          const sendMessagePromises = Array.from(Array(10).keys()).map((index) =>
-            sqsClient.sendMessageAsync({ scenario, index })
-          );
-          await Promise.all(sendMessagePromises);
-        }
-        break;
+      [Scenarios.HandlesMessageBatch]: ({ scenario, params }): Promise<any> => {
+        const sendMessagePromises = Array.from(Array(params.batchSize).keys()).map((index) =>
+          sqsClient.sendMessageAsync({ scenario, index })
+        );
+        return Promise.all(sendMessagePromises);
+      },
 
-      default:
-        throw new Error(`Unhandled scenario: ${scenario}`);
-    }
+      [Scenarios.HandlesMessageBatchError]: ({ scenario, params }): Promise<any> => {
+        const sendMessagePromises = Array.from(Array(params.batchSize).keys()).map((index) =>
+          sqsClient.sendMessageAsync({ scenario, index })
+        );
+        return Promise.all(sendMessagePromises);
+      },
+    };
   }
 }
 
-const sqsFunctionTestStarterFunction = new SQSFunctionTestStarterFunction(testStateRepository, {
-  log,
-});
+const sqsFunctionTestStarterFunction = new SQSFunctionTestStarterFunction();
 
 export const testStarterHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     sqsFunctionTestStarterFunction.handleAsync(event, context)
-).use(httpErrorHandler());
-
-// Test poller function
-
-class SQSFunctionTestPollerFunction extends TestPollerFunction {
-  //
-  async pollTestAsync({ scenario, items }): Promise<TestPollResponse> {
-    //
-    switch (scenario) {
-      //
-      case Scenarios.HandlesMessage:
-        return {
-          success: items[0].itemData.success === true,
-        };
-
-      case Scenarios.HandlesMessageBatch: {
-        if (items.length < 10) {
-          return {};
-        }
-        return {
-          success: items.every((item) => item.itemData.success === true),
-        };
-      }
-
-      case Scenarios.HandlesMessageBatchError: {
-        // eslint-disable-next-line no-console
-        console.log(`scenarioItems: ${JSON.stringify(items)}`);
-        if (items.length < 10) {
-          // eslint-disable-next-line no-console
-          console.log(`Still waiting for 10`);
-          return {};
-        }
-        return {
-          success: items.every((item) => item.itemData.success === (item.itemId !== 'message-7')),
-        };
-      }
-
-      default:
-        throw new Error(`Unhandled scenario: ${scenario}`);
-    }
-  }
-}
-
-const sqsFunctionTestPollerFunction = new SQSFunctionTestPollerFunction(testStateRepository, {
-  log,
-});
-
-export const testPollerHandler = middy(
-  async (event: any, context: Context): Promise<any> =>
-    sqsFunctionTestPollerFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
 
 // Receive test message function
@@ -179,3 +133,48 @@ export const dlqTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     dlqTestMessageFunction.handleAsync(event, context)
 ).use(sqsBatch());
+
+// Test poller function
+
+class SQSFunctionTestPollerFunction extends TestPollerFunction {
+  //
+  constructor() {
+    super(testStateRepository, { log });
+
+    this.tests = {
+      //
+      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
+        success: items.length === 1 && items[0].itemData.success === true,
+      }),
+
+      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
+        if (items.length < params.batchSize) {
+          return {};
+        }
+        return {
+          success:
+            items.length === params.batchSize &&
+            items.every((item) => item.itemData.success === true),
+        };
+      },
+
+      [Scenarios.HandlesMessageBatchError]: ({ items, params }): TestPollResponse => {
+        if (items.length < params.batchSize) {
+          return {};
+        }
+        return {
+          success:
+            items.length === params.batchSize &&
+            items.every((item) => item.itemData.success === (item.itemId !== 'message-7')),
+        };
+      },
+    };
+  }
+}
+
+const sqsFunctionTestPollerFunction = new SQSFunctionTestPollerFunction();
+
+export const testPollerHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    sqsFunctionTestPollerFunction.handleAsync(event, context)
+).use(httpErrorHandler());
