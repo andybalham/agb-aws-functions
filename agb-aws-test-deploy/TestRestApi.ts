@@ -9,6 +9,7 @@ import TestStateDynamoDBTable from './TestStateDynamoDBTable';
 
 export interface TestApiProps {
   testApiKeyValue?: string;
+  testStateTable?: boolean;
 }
 
 export default class TestRestApi extends cdk.Construct {
@@ -58,7 +59,9 @@ export default class TestRestApi extends cdk.Construct {
       description: `${id} Test Usage Plan`,
     });
 
-    this.testStateTable = new TestStateDynamoDBTable(this, id);
+    if (props.testStateTable !== false) {
+      this.testStateTable = new TestStateDynamoDBTable(this, id);
+    }
   }
 
   addTestStarterFunction(
@@ -77,7 +80,7 @@ export default class TestRestApi extends cdk.Construct {
 
     this.testStateTable.grantReadWriteData(testStarterFunction);
 
-    this.addPostFunction({
+    this.addPostMethodFunction({
       path: 'start-test',
       methodFunction: testStarterFunction,
     });
@@ -101,7 +104,7 @@ export default class TestRestApi extends cdk.Construct {
 
     this.testStateTable.grantReadData(testPollerFunction);
 
-    this.addPostFunction({
+    this.addPostMethodFunction({
       path: 'poll-test',
       methodFunction: testPollerFunction,
     });
@@ -109,16 +112,15 @@ export default class TestRestApi extends cdk.Construct {
     return testPollerFunction;
   }
 
-  // private addGetFunction(args: {
-  //   path: string;
-  //   methodFunction: lambda.Function;
-  //   options?: apigateway.MethodOptions;
-  // }): apigateway.Method {
-  //   return this.addMethodFunction({ ...args, httpMethod: 'GET' });
-  // }
+  addGetMethodFunction(args: {
+    path: string;
+    methodFunction: lambda.Function;
+    options?: apigateway.MethodOptions;
+  }): apigateway.Method {
+    return this.addMethodFunction({ ...args, httpMethod: 'GET' });
+  }
 
-  // TODO 02Apr21: Make this private
-  addPostFunction(args: {
+  addPostMethodFunction(args: {
     path: string;
     methodFunction: lambda.Function;
     options?: apigateway.MethodOptions;
@@ -126,7 +128,7 @@ export default class TestRestApi extends cdk.Construct {
     return this.addMethodFunction({ ...args, httpMethod: 'POST' });
   }
 
-  private addMethodFunction({
+  addMethodFunction({
     path: methodPath,
     httpMethod,
     methodFunction,

@@ -74,44 +74,6 @@ export const testStarterHandler = middy(
     s3FunctionTestStarterFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
 
-// Test poller function
-
-class S3FunctionTestPollerFunction extends TestPollerFunction {
-  constructor() {
-    super(testStateRepository, { log });
-
-    this.tests = {
-      [Scenarios.HandlesObjectCreated]: ({ items, params }): TestPollResponse => ({
-        success:
-          items.length === 1 &&
-          items[0].itemData?.instanceId === params.instanceId &&
-          items[0].itemData?.expectedEventName,
-      }),
-
-      [Scenarios.HandlesObjectCreatedBatch]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
-          return {};
-        }
-        return {
-          success: items.every((item) => item.itemData.instanceId === params.instanceId),
-        };
-      },
-
-      [Scenarios.HandlesError]: ({ items, params }): TestPollResponse => ({
-        success:
-          items.length === 1 && items[0].itemData?.errorMessage === params.expectedErrorMessage,
-      }),
-    };
-  }
-}
-
-const s3FunctionTestPollerFunction = new S3FunctionTestPollerFunction();
-
-export const testPollerHandler = middy(
-  async (event: any, context: Context): Promise<any> =>
-    s3FunctionTestPollerFunction.handleAsync(event, context)
-).use(httpErrorHandler());
-
 // HandleObjectCreated
 
 class HandleObjectCreatedFunction extends S3Function {
@@ -160,3 +122,41 @@ export const handleObjectCreatedHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     handleObjectCreatedFunction.handleAsync(event, context)
 );
+
+// Test poller function
+
+class S3FunctionTestPollerFunction extends TestPollerFunction {
+  constructor() {
+    super(testStateRepository, { log });
+
+    this.tests = {
+      [Scenarios.HandlesObjectCreated]: ({ items, params }): TestPollResponse => ({
+        success:
+          items.length === 1 &&
+          items[0].itemData?.instanceId === params.instanceId &&
+          items[0].itemData?.expectedEventName,
+      }),
+
+      [Scenarios.HandlesObjectCreatedBatch]: ({ items, params }): TestPollResponse => {
+        if (items.length < params.batchSize) {
+          return {};
+        }
+        return {
+          success: items.every((item) => item.itemData.instanceId === params.instanceId),
+        };
+      },
+
+      [Scenarios.HandlesError]: ({ items, params }): TestPollResponse => ({
+        success:
+          items.length === 1 && items[0].itemData?.errorMessage === params.expectedErrorMessage,
+      }),
+    };
+  }
+}
+
+const s3FunctionTestPollerFunction = new S3FunctionTestPollerFunction();
+
+export const testPollerHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    s3FunctionTestPollerFunction.handleAsync(event, context)
+).use(httpErrorHandler());

@@ -69,43 +69,6 @@ export const testStarterHandler = middy(
     snsFunctionTestStarterFunction.handleAsync(event, context)
 ).use(httpErrorHandler());
 
-// Test poller function
-
-class SNSFunctionTestPollerFunction extends TestPollerFunction {
-  //
-  constructor() {
-    //
-    super(testStateRepository, { log });
-
-    this.tests = {
-      //
-      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
-        success: items.length === 1 && items[0].itemData.success === true,
-      }),
-
-      [Scenarios.HandlesError]: ({ items }): TestPollResponse => ({
-        success: items.length === 1 && items[0].itemData.errorMessage === 'Test error',
-      }),
-
-      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
-          return {};
-        }
-        return {
-          success: items.every((item) => item.itemData.success === true),
-        };
-      },
-    };
-  }
-}
-
-const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction();
-
-export const testPollerHandler = middy(
-  async (event: any, context: Context): Promise<any> =>
-    snsFunctionTestPollerFunction.handleAsync(event, context)
-).use(httpErrorHandler());
-
 // Receive test message function
 
 class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
@@ -150,3 +113,40 @@ export const receiveTestMessageHandler = middy(
   async (event: any, context: Context): Promise<any> =>
     receiveTestMessageFunction.handleAsync(event, context)
 );
+
+// Test poller function
+
+class SNSFunctionTestPollerFunction extends TestPollerFunction {
+  //
+  constructor() {
+    //
+    super(testStateRepository, { log });
+
+    this.tests = {
+      //
+      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
+        success: items.length === 1 && items[0].itemData.success === true,
+      }),
+
+      [Scenarios.HandlesError]: ({ items }): TestPollResponse => ({
+        success: items.length === 1 && items[0].itemData.errorMessage === 'Test error',
+      }),
+
+      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
+        if (items.length < params.batchSize) {
+          return {};
+        }
+        return {
+          success: items.every((item) => item.itemData.success === true),
+        };
+      },
+    };
+  }
+}
+
+const snsFunctionTestPollerFunction = new SNSFunctionTestPollerFunction();
+
+export const testPollerHandler = middy(
+  async (event: any, context: Context): Promise<any> =>
+    snsFunctionTestPollerFunction.handleAsync(event, context)
+).use(httpErrorHandler());

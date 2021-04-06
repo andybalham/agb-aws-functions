@@ -2,7 +2,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
-import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -25,24 +24,29 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
 
     const testApi = new TestRestApi(this, 'ApiGatewayFunction', {
       testApiKeyValue: process.env.API_GATEWAY_FUNCTION_API_KEY,
+      testStateTable: false,
     });
 
     const methodOptions = {
       apiKeyRequired: true,
     };
 
-    testApi.apiRoot
-      .addResource('query-string')
-      .addMethod('GET', new apigateway.LambdaIntegration(parameterTestFunction), methodOptions);
+    testApi.addGetMethodFunction({
+      path: 'query-string',
+      methodFunction: parameterTestFunction,
+      options: methodOptions,
+    });
 
-    testApi.apiRoot
-      .addResource('path-parameters')
-      .addResource('{x}')
-      .addResource('{y}')
-      .addMethod('GET', new apigateway.LambdaIntegration(parameterTestFunction), methodOptions);
+    testApi.addGetMethodFunction({
+      path: 'path-parameters/{x}/{y}',
+      methodFunction: parameterTestFunction,
+      options: methodOptions,
+    });
 
-    testApi.apiRoot
-      .addResource('request-body')
-      .addMethod('POST', new apigateway.LambdaIntegration(parameterTestFunction), methodOptions);
+    testApi.addPostMethodFunction({
+      path: 'request-body',
+      methodFunction: parameterTestFunction,
+      options: methodOptions,
+    });
   }
 }
