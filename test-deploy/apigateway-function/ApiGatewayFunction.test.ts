@@ -27,7 +27,7 @@ describe('ApiGatewayFunction integration tests', () => {
     expect(response.data.correlationId).to.not.be.undefined;
 
     const parameterTestResponse = response.data as ParameterTestResponse;
-    expect(parameterTestResponse.result).to.equal('1+2');
+    expect(parameterTestResponse.result).to.equal('3');
   });
 
   it('GET with path parameters', async () => {
@@ -40,7 +40,7 @@ describe('ApiGatewayFunction integration tests', () => {
     expect(response.data.correlationId).to.not.be.undefined;
 
     const parameterTestResponse = response.data as ParameterTestResponse;
-    expect(parameterTestResponse.result).to.equal('1+2');
+    expect(parameterTestResponse.result).to.equal('3');
   });
 
   it('POST with request body', async () => {
@@ -58,6 +58,18 @@ describe('ApiGatewayFunction integration tests', () => {
     expect(response.data.correlationId).to.not.be.undefined;
 
     const parameterTestResponse = response.data as ParameterTestResponse;
-    expect(parameterTestResponse.result).to.equal('1+2');
+    expect(parameterTestResponse.result).to.equal('3');
+  });
+
+  it('GET with error', async () => {
+    //
+    try {
+      await axios.get('path-parameters/444/222', axiosConfig);
+      expect(false, 'Exception expected').to.be.true;
+    } catch (error) {
+      expect(error.response.status).to.equal(500);
+      expect(error.response.data.requestId).to.not.be.undefined;
+      expect(error.response.data.correlationId).to.not.be.undefined;
+    }
   });
 });
