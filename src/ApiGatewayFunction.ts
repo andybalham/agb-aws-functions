@@ -11,7 +11,7 @@ import { HttpStatusCode } from './HttpStatusCode';
 
 export interface ApiGatewayFunctionProps extends BaseFunctionProps<APIGatewayProxyEvent> {
   responseStatusCode?: HttpStatusCode;
-  correlationIdGetter?: () => {
+  getCorrelationIds?: () => {
     [key: string]: any;
   };
 }
@@ -35,8 +35,8 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
 
   protected async handleInternalAsync(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     //
-    if (this.apiGatewayProps.correlationIdGetter) {
-      const correlationIds = this.apiGatewayProps.correlationIdGetter();
+    if (this.apiGatewayProps.getCorrelationIds) {
+      const correlationIds = this.apiGatewayProps.getCorrelationIds();
       this.requestId = correlationIds.awsRequestId;
       this.correlationId = correlationIds['x-correlation-id'];
     }
@@ -48,7 +48,7 @@ export default abstract class ApiGatewayFunction<TReq, TRes> extends BaseFunctio
     try {
       const response = await this.handleRequestAsync(request);
 
-      if (this.apiGatewayProps.correlationIdGetter && response !== undefined) {
+      if (this.apiGatewayProps.getCorrelationIds && response !== undefined) {
         (response as any).correlationId = this.correlationId;
         (response as any).requestId = this.requestId;
       }

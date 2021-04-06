@@ -27,10 +27,7 @@ class ParameterTestFunction extends ApiGatewayFunction<
 > {
   //
   constructor() {
-    super({
-      log,
-      correlationIdGetter: CorrelationIds.get,
-    });
+    super({ log, getCorrelationIds: CorrelationIds.get });
   }
 
   async handleRequestAsync(request: ParameterTestRequest): Promise<ParameterTestResponse> {
