@@ -4,7 +4,7 @@
 /* eslint-disable no-console */
 import { expect } from 'chai';
 import dotenv from 'dotenv';
-import { TestRunner } from '../../agb-aws-test-deploy';
+import { TestRunner } from '../../agb-aws-test';
 import { Scenarios } from './SNSFunction.test-fn';
 
 dotenv.config();

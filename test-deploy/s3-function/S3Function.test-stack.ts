@@ -7,7 +7,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as s3 from '@aws-cdk/aws-s3';
 import dotenv from 'dotenv';
 import * as s3Notifications from '@aws-cdk/aws-s3-notifications';
-import { newTestFunction, TestRestApi } from '../../agb-aws-test-deploy';
+import { newTestFunction, TestRestApi } from '../../agb-aws-test';
 
 dotenv.config();
 

@@ -14,7 +14,7 @@ import {
   TestPollResponse,
   TestStarterFunction,
   TestStateRepository,
-} from '../../agb-aws-test-deploy';
+} from '../../agb-aws-test';
 import { DynamoDBClient } from '../../agb-aws-clients';
 
 export enum Scenarios {

@@ -13,7 +13,7 @@ import {
   TestPollResponse,
   TestStarterFunction,
   TestStateRepository,
-} from '../../agb-aws-test-deploy';
+} from '../../agb-aws-test';
 import { DynamoDBClient } from '../../agb-aws-clients';
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);

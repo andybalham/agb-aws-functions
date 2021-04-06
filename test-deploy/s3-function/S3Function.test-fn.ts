@@ -15,7 +15,7 @@ import {
   TestPollResponse,
   TestStarterFunction,
   TestStateRepository,
-} from '../../agb-aws-test-deploy';
+} from '../../agb-aws-test';
 import { DynamoDBClient } from '../../agb-aws-clients';
 
 const s3Client = new S3Client(process.env.TEST_BUCKET_NAME);

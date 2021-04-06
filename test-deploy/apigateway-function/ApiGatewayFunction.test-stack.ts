@@ -5,7 +5,7 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import path from 'path';
 import dotenv from 'dotenv';
-import TestRestApi from '../../agb-aws-test-deploy/TestRestApi';
+import TestRestApi from '../../agb-aws-test/TestRestApi';
 
 dotenv.config();
 
