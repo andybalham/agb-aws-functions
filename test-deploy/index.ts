@@ -5,6 +5,7 @@
 import * as cdk from '@aws-cdk/core';
 import { Tags } from '@aws-cdk/core';
 import ApiGatewayFunctionStack from './apigateway-function/ApiGatewayFunction.test-stack';
+import DynamoDBStreamFunctionStack from './dynamodb-function/DynamoDBStreamFunction.test-stack';
 import S3FunctionStack from './s3-function/S3Function.test-stack';
 import SNSFunctionStack from './sns-function/SNSFunction.test-stack';
 import SQSFunctionStack from './sqs-function/SQSFunction.test-stack';
@@ -16,3 +17,4 @@ new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {});
 new SNSFunctionStack(app, 'SNSFunctionTest', {});
 new SQSFunctionStack(app, 'SQSFunctionTest', {});
 new S3FunctionStack(app, 'S3FunctionTest', {});
+new DynamoDBStreamFunctionStack(app, 'DynamoDBStreamFunctionTest', {});

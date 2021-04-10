@@ -54,7 +54,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     const receiveTestMessageFunction = this.newSNSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        TEST_TABLE_NAME: testApi.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: testApi.testStateTable.tableName,
       },
     });
 

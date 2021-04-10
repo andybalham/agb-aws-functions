@@ -19,6 +19,9 @@
     "s3-synth": "tsc && cdk synth S3FunctionTest",
     "s3-deploy": "tsc && cdk deploy S3FunctionTest",
     "s3-test": "mocha --require ts-node/register test-deploy/test/**/S3*.ts",
+    "dynamodbstream-synth": "tsc && cdk synth DynamoDBStreamFunctionTest",
+    "dynamodbstream-deploy": "tsc && cdk deploy DynamoDBStreamFunctionTest",
+    "dynamodbstream-test": "mocha --require ts-node/register test-deploy/test/**/S3*.ts",
     "sqs-synth": "tsc && cdk synth SQSFunctionTest",
     "sqs-deploy": "tsc && cdk deploy SQSFunctionTest",
     "sqs-test": "mocha --require ts-node/register test-deploy/test/**/SQS*.ts"

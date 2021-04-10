@@ -20,7 +20,7 @@ import { DynamoDBClient } from '../../agb-aws-clients';
 
 const s3Client = new S3Client(process.env.TEST_BUCKET_NAME);
 const testStateRepository = new TestStateRepository(
-  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+  new DynamoDBClient(process.env.AWS_TEST_STATE_TABLE_NAME)
 );
 
 export enum Scenarios {
@@ -93,7 +93,7 @@ class HandleObjectCreatedFunction extends S3Function {
         {
           const s3Object = await s3Client.getObjectAsync(eventRecord.s3.object.key);
 
-          await testStateRepository.putCurrentTestItemAsync(eventRecord.s3.object.key, {
+          await testStateRepository.putTestResultItemAsync(eventRecord.s3.object.key, {
             instanceId: s3Object.instanceId,
             expectedEventName: eventRecord.eventName.startsWith('ObjectCreated:'),
           });
@@ -110,7 +110,7 @@ class HandleObjectCreatedFunction extends S3Function {
 
   async handleErrorAsync(error: any, event: S3Event, eventRecord: S3EventRecord): Promise<void> {
     await super.handleErrorAsync(error, event, eventRecord);
-    await testStateRepository.putCurrentTestItemAsync('error', {
+    await testStateRepository.putTestResultItemAsync('error', {
       errorMessage: error.message,
     });
   }

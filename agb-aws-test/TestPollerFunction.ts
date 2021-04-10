@@ -46,6 +46,11 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
 
     if (testPoller === undefined) throw new Error(`testPoller === undefined for ${test.scenario}`);
 
-    return testPoller(test);
+    const testPollResponse = testPoller(test);
+
+    if (this.apiGatewayProps.log?.debug)
+      this.apiGatewayProps.log?.debug('About to poll via', { testPoller });
+
+    return testPollResponse;
   }
 }

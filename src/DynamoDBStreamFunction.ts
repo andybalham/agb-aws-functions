@@ -30,31 +30,42 @@ export default abstract class DynamoDBStreamFunction<T> extends BaseFunction<
   ): Promise<PromiseSettledResult<void>[]> {
     //
     const recordPromises = event.Records.map((record) =>
-      this.processEventRecordInternalAsync(record)
+      this.processEventRecordInternalAsync(record, event)
     );
     return Promise.allSettled(recordPromises);
+    // eslint-disable-next-line no-restricted-syntax
+    // for (const record of event.Records) {
+    //   // eslint-disable-next-line no-await-in-loop
+    //   await this.processEventRecordInternalAsync(record);
+    // }
   }
 
-  private async processEventRecordInternalAsync(eventRecord: DynamoDBRecord): Promise<void> {
+  private async processEventRecordInternalAsync(
+    eventRecord: DynamoDBRecord,
+    event: DynamoDBStreamEvent
+  ): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
       this.props.log.debug('Processing record', { eventRecord });
 
-    const { eventName } = eventRecord;
+    const { eventName, dynamodb } = eventRecord;
 
     const oldImage =
-      eventRecord.dynamodb?.OldImage === undefined
+      dynamodb?.OldImage === undefined
         ? undefined
-        : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.OldImage) as T);
+        : (DynamoDB.Converter.unmarshall(dynamodb.OldImage) as T);
 
     const newImage =
-      eventRecord.dynamodb?.NewImage === undefined
+      dynamodb?.NewImage === undefined
         ? undefined
-        : (DynamoDB.Converter.unmarshall(eventRecord.dynamodb.NewImage) as T);
+        : (DynamoDB.Converter.unmarshall(dynamodb.NewImage) as T);
 
-    // TODO 13Mar21: How should we handle errors from processEventRecordAsync?
-
-    await this.processEventRecordAsync(eventName, oldImage, newImage);
+    try {
+      await this.processEventRecordAsync(eventName, oldImage, newImage);
+    } catch (error) {
+      this.logError('Error processing event record', { eventRecord, event }, error);
+      throw error;
+    }
   }
 
   abstract processEventRecordAsync(

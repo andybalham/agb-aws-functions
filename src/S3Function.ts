@@ -72,6 +72,6 @@ export default abstract class S3Function extends BaseFunction<
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async handleErrorAsync(error: any, event: S3Event, eventRecord: S3EventRecord): Promise<void> {
-    this.logError('Error handling event record', { event, eventRecord }, error);
+    this.logError('Error handling event record', { eventRecord, event }, error);
   }
 }

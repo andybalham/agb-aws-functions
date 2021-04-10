@@ -35,7 +35,7 @@ export default class TestStateRepository {
     await this.testStateClient.putAsync(currentTest);
   }
 
-  async putCurrentTestItemAsync(itemId: string, itemData?: Record<string, any>): Promise<void> {
+  async putTestResultItemAsync(itemId: string, itemData?: Record<string, any>): Promise<void> {
     //
     const currentTest = await this.getCurrentTestAsync();
 

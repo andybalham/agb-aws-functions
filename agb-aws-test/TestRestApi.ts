@@ -74,7 +74,7 @@ export default class TestRestApi extends cdk.Construct {
       handler: 'testStarterHandler',
       environment: {
         ...environment,
-        TEST_TABLE_NAME: this.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: this.testStateTable.tableName,
       },
     });
 
@@ -98,7 +98,7 @@ export default class TestRestApi extends cdk.Construct {
       handler: 'testPollerHandler',
       environment: {
         ...environment,
-        TEST_TABLE_NAME: this.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: this.testStateTable.tableName,
       },
     });
 

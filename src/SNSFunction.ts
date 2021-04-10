@@ -52,9 +52,9 @@ export default abstract class SNSFunction<T> extends BaseFunction<
         //
       } catch (error) {
         try {
-          await this.handleErrorAsync(error, event, eventRecord);
+          await this.handleErrorAsync(error, message, eventRecord, event);
         } catch (errorHandlingError) {
-          this.logError('Error handling error', { event, eventRecord }, errorHandlingError);
+          this.logError('Error handling error', { eventRecord, event }, errorHandlingError);
         }
       }
     } else {
@@ -66,7 +66,12 @@ export default abstract class SNSFunction<T> extends BaseFunction<
 
   abstract handleMessageAsync(message: T): Promise<void>;
 
-  async handleErrorAsync(error: any, event: SNSEvent, eventRecord: SNSEventRecord): Promise<void> {
-    this.logError('Error handling event record', { event, eventRecord }, error);
+  async handleErrorAsync(
+    error: any,
+    message: T,
+    eventRecord: SNSEventRecord,
+    event: SNSEvent
+  ): Promise<void> {
+    this.logError('Error handling message', { message, event, eventRecord }, error);
   }
 }

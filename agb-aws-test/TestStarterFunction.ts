@@ -40,6 +40,9 @@ export default abstract class TestStarterFunction extends ApiGatewayFunction<
 
     if (testStarter === undefined) throw new Error(`testStarter === undefined for ${scenario}`);
 
+    if (this.apiGatewayProps.log?.debug)
+      this.apiGatewayProps.log?.debug('About to start via', { testStarter });
+
     await testStarter({ scenario, params });
   }
 }

@@ -11,8 +11,7 @@ import { newTestFunction, TestRestApi } from '../../agb-aws-test';
 
 dotenv.config();
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-type s3FunctionStackProps = cdk.StackProps;
+type S3FunctionStackProps = cdk.StackProps;
 
 const functionEntry = path.join(__dirname, '.', `S3Function.test-fn.ts`);
 
@@ -28,7 +27,7 @@ export default class S3FunctionStack extends cdk.Stack {
       entry: functionEntry,
     });
 
-  constructor(scope: cdk.App, id: string, props: s3FunctionStackProps) {
+  constructor(scope: cdk.App, id: string, props: S3FunctionStackProps) {
     //
     super(scope, id, props);
 
@@ -55,7 +54,7 @@ export default class S3FunctionStack extends cdk.Stack {
     const handleObjectCreatedFunction = this.newS3TestFunction({
       name: 'HandleObjectCreated',
       environment: {
-        TEST_TABLE_NAME: testApi.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: testApi.testStateTable.tableName,
         TEST_BUCKET_NAME: testBucket.bucketName,
       },
     });

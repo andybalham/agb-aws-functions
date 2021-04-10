@@ -65,7 +65,7 @@ export default class SQSFunctionStack extends cdk.Stack {
     const receiveTestMessageFunction = this.newSQSTestFunction({
       name: 'ReceiveTestMessage',
       environment: {
-        TEST_TABLE_NAME: testApi.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: testApi.testStateTable.tableName,
       },
     });
 
@@ -82,7 +82,7 @@ export default class SQSFunctionStack extends cdk.Stack {
     const dlqTestMessageFunction = this.newSQSTestFunction({
       name: 'DLQTestMessage',
       environment: {
-        TEST_TABLE_NAME: testApi.testStateTable.tableName,
+        AWS_TEST_STATE_TABLE_NAME: testApi.testStateTable.tableName,
       },
     });
 

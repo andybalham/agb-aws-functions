@@ -18,7 +18,7 @@ import { DynamoDBClient } from '../../agb-aws-clients';
 
 const snsClient = new SNSClient(process.env.SNS_FUNCTION_TOPIC_ARN);
 const testStateRepository = new TestStateRepository(
-  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+  new DynamoDBClient(process.env.AWS_TEST_STATE_TABLE_NAME)
 );
 
 export enum Scenarios {
@@ -82,11 +82,11 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putCurrentTestItemAsync('message', { success: true });
+        await testStateRepository.putTestResultItemAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
+        await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -99,9 +99,14 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     }
   }
 
-  async handleErrorAsync(error: any, event: SNSEvent, eventRecord: SNSEventRecord): Promise<void> {
-    await super.handleErrorAsync(error, event, eventRecord);
-    await testStateRepository.putCurrentTestItemAsync('result', {
+  async handleErrorAsync(
+    error: any,
+    message: TestMessage,
+    eventRecord: SNSEventRecord,
+    event: SNSEvent
+  ): Promise<void> {
+    await super.handleErrorAsync(error, message, eventRecord, event);
+    await testStateRepository.putTestResultItemAsync('result', {
       errorMessage: error.message,
     });
   }

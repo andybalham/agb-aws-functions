@@ -25,7 +25,7 @@ export enum Scenarios {
 
 const sqsClient = new SQSClient(process.env.SQS_FUNCTION_QUEUE_URL);
 const testStateRepository = new TestStateRepository(
-  new DynamoDBClient(process.env.TEST_TABLE_NAME)
+  new DynamoDBClient(process.env.AWS_TEST_STATE_TABLE_NAME)
 );
 
 export interface TestMessage {
@@ -83,11 +83,11 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putCurrentTestItemAsync('message', { success: true });
+        await testStateRepository.putTestResultItemAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
+        await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -96,7 +96,7 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
         if (message.index === 7) {
           throw new Error(`Unlucky 7`);
         } else {
-          await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
+          await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
             success: true,
           });
         }
@@ -121,7 +121,7 @@ class DLQTestMessageFunction extends SQSFunction<TestMessage> {
   //
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    await testStateRepository.putCurrentTestItemAsync(`message-${message.index}`, {
+    await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
       success: false,
     });
   }

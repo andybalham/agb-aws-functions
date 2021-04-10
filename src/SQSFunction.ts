@@ -28,12 +28,12 @@ export default abstract class SQSFunction<T> extends BaseFunction<
     return Promise.allSettled(recordPromises);
   }
 
-  private async handleRecordAsync(record: SQSRecord): Promise<void> {
+  private async handleRecordAsync(eventRecord: SQSRecord): Promise<void> {
     //
     if (this.props.logRecord && this.props.log?.debug)
-      this.props.log.debug('Handling event record', { record });
+      this.props.log.debug('Handling event record', { record: eventRecord });
 
-    const message = JSON.parse(record.body);
+    const message = JSON.parse(eventRecord.body);
 
     if ((message as any).Event?.endsWith(':TestEvent')) {
       if (this.props.log?.info) this.props.log.info('Skipping test event', { message });
@@ -43,6 +43,7 @@ export default abstract class SQSFunction<T> extends BaseFunction<
     try {
       await this.handleMessageAsync(message);
     } catch (error) {
+      // TODO 10Apr21: Log the message, the eventRecord, and the event
       this.logError('Error handling message', { message }, error);
       throw error;
     }
