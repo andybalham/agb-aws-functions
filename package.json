@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/andybalham/agb-aws-functions#readme",
   "devDependencies": {
-    "@andybalham/agb-aws-clients": "^1.0.6",
+    "@andybalham/agb-aws-clients": "^1.0.7",
     "@aws-cdk/aws-apigateway": "1.91.0",
     "@aws-cdk/aws-lambda": "1.91.0",
     "@aws-cdk/aws-lambda-event-sources": "1.91.0",
