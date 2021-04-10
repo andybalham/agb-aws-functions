@@ -12,7 +12,7 @@ export interface TestApiProps {
   testStateTable?: boolean;
 }
 
-export default class TestRestApi extends cdk.Construct {
+export default class TestApi extends cdk.Construct {
   //
   readonly id: string;
 

@@ -93,7 +93,7 @@ class HandleObjectCreatedFunction extends S3Function {
         {
           const s3Object = await s3Client.getObjectAsync(eventRecord.s3.object.key);
 
-          await testStateRepository.putTestResultItemAsync(eventRecord.s3.object.key, {
+          await testStateRepository.putTestResultAsync(eventRecord.s3.object.key, {
             instanceId: s3Object.instanceId,
             expectedEventName: eventRecord.eventName.startsWith('ObjectCreated:'),
           });
@@ -110,7 +110,7 @@ class HandleObjectCreatedFunction extends S3Function {
 
   async handleErrorAsync(error: any, event: S3Event, eventRecord: S3EventRecord): Promise<void> {
     await super.handleErrorAsync(error, event, eventRecord);
-    await testStateRepository.putTestResultItemAsync('error', {
+    await testStateRepository.putTestResultAsync('error', {
       errorMessage: error.message,
     });
   }
@@ -130,25 +130,25 @@ class S3FunctionTestPollerFunction extends TestPollerFunction {
     super(testStateRepository, { log });
 
     this.tests = {
-      [Scenarios.HandlesObjectCreated]: ({ items, params }): TestPollResponse => ({
+      [Scenarios.HandlesObjectCreated]: ({ results, params }): TestPollResponse => ({
         success:
-          items.length === 1 &&
-          items[0].itemData?.instanceId === params.instanceId &&
-          items[0].itemData?.expectedEventName,
+          results.length === 1 &&
+          results[0].itemData?.instanceId === params.instanceId &&
+          results[0].itemData?.expectedEventName,
       }),
 
-      [Scenarios.HandlesObjectCreatedBatch]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
+      [Scenarios.HandlesObjectCreatedBatch]: ({ results, params }): TestPollResponse => {
+        if (results.length < params.batchSize) {
           return {};
         }
         return {
-          success: items.every((item) => item.itemData.instanceId === params.instanceId),
+          success: results.every((result) => result.itemData.instanceId === params.instanceId),
         };
       },
 
-      [Scenarios.HandlesError]: ({ items, params }): TestPollResponse => ({
+      [Scenarios.HandlesError]: ({ results, params }): TestPollResponse => ({
         success:
-          items.length === 1 && items[0].itemData?.errorMessage === params.expectedErrorMessage,
+          results.length === 1 && results[0].itemData?.errorMessage === params.expectedErrorMessage,
       }),
     };
   }

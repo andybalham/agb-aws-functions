@@ -7,7 +7,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaEvents from '@aws-cdk/aws-lambda-event-sources';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import dotenv from 'dotenv';
-import { newTestFunction, TestRestApi } from '../../agb-aws-test';
+import { newTestFunction, TestApi } from '../../agb-aws-test';
 
 dotenv.config();
 
@@ -31,7 +31,7 @@ export default class DynamoDBStreamFunctionStack extends cdk.Stack {
     //
     super(scope, id, props);
 
-    const awsTestApi = new TestRestApi(this, 'DynamoDBStreamFunction', {
+    const awsTestApi = new TestApi(this, 'DynamoDBStreamFunction', {
       testApiKeyValue: process.env.DYNAMODBSTREAM_FUNCTION_API_KEY,
     });
 
@@ -39,6 +39,7 @@ export default class DynamoDBStreamFunctionStack extends cdk.Stack {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Test starter and test poller functions

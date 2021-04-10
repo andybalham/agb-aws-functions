@@ -3,7 +3,7 @@ import { DynamoDBClient } from '../agb-aws-clients';
 export interface TestStateItem {
   scenario: string;
   itemId: string;
-  itemData: any;
+  itemData: Record<string, any>;
 }
 
 export default class TestStateRepository {
@@ -15,7 +15,7 @@ export default class TestStateRepository {
 
   async setCurrentTestAsync(scenario: string, params: Record<string, any>): Promise<void> {
     //
-    const previousScenarioItems = await this.getTestItemsAsync(scenario);
+    const previousScenarioItems = await this.getTestResultsAsync(scenario);
 
     await Promise.all(
       previousScenarioItems.map((item) =>
@@ -35,41 +35,66 @@ export default class TestStateRepository {
     await this.testStateClient.putAsync(currentTest);
   }
 
-  async putTestResultItemAsync(itemId: string, itemData?: Record<string, any>): Promise<void> {
-    //
-    const currentTest = await this.getCurrentTestAsync();
-
-    const scenarioItem: TestStateItem = {
-      scenario: currentTest.scenario,
-      itemId,
-      itemData,
-    };
-
-    await this.testStateClient.putAsync(scenarioItem);
-  }
-
   public async getCurrentTestAsync(): Promise<{
     scenario: string;
     params: Record<string, any>;
     startTime: number;
   }> {
     //
-    const currentScenarioStateItem = await this.testStateClient.getAsync<TestStateItem>({
+    const currentScenarioItem = await this.testStateClient.getAsync<TestStateItem>({
       scenario: 'current',
       itemId: 'scenario',
     });
 
-    if (currentScenarioStateItem === undefined)
+    if (currentScenarioItem === undefined)
       throw new Error('currentScenarioStateItem === undefined');
 
     return {
-      scenario: currentScenarioStateItem.itemData.scenario,
-      params: currentScenarioStateItem.itemData.params,
-      startTime: currentScenarioStateItem.itemData.startTime,
+      scenario: currentScenarioItem.itemData.scenario,
+      params: currentScenarioItem.itemData.params,
+      startTime: currentScenarioItem.itemData.startTime,
     };
   }
 
-  async getTestItemsAsync(scenario: string): Promise<TestStateItem[]> {
-    return this.testStateClient.queryByPartitionKeyAsync<TestStateItem>(scenario);
+  async putTestResultAsync(resultId: string, resultData?: Record<string, any>): Promise<void> {
+    //
+    const currentTest = await this.getCurrentTestAsync();
+
+    const resultItem: TestStateItem = {
+      scenario: currentTest.scenario,
+      itemId: `result-${resultId}`,
+      itemData: resultData ?? {},
+    };
+
+    await this.testStateClient.putAsync(resultItem);
+  }
+
+  async getTestResultsAsync(scenario: string): Promise<TestStateItem[]> {
+    return this.testStateClient.queryBySortKeyPrefixAsync<TestStateItem>(scenario, 'result-');
+  }
+
+  async putTestStateAsync(stateId: string, stateData?: Record<string, any>): Promise<void> {
+    //
+    const currentTest = await this.getCurrentTestAsync();
+
+    const stateItem: TestStateItem = {
+      scenario: currentTest.scenario,
+      itemId: `state-${stateId}`,
+      itemData: stateData ?? {},
+    };
+
+    await this.testStateClient.putAsync(stateItem);
+  }
+
+  async getTestStateAsync(stateId: string): Promise<Record<string, any> | undefined> {
+    //
+    const { scenario } = await this.getCurrentTestAsync();
+
+    const stateItem = await this.testStateClient.getAsync<TestStateItem>({
+      scenario,
+      itemId: `state-${stateId}`,
+    });
+
+    return stateItem?.itemData;
   }
 }

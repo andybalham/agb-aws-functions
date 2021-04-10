@@ -83,11 +83,11 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putTestResultItemAsync('message', { success: true });
+        await testStateRepository.putTestResultAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
+        await testStateRepository.putTestResultAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -96,7 +96,7 @@ class ReceiveTestMessageFunction extends SQSFunction<TestMessage> {
         if (message.index === 7) {
           throw new Error(`Unlucky 7`);
         } else {
-          await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
+          await testStateRepository.putTestResultAsync(`message-${message.index}`, {
             success: true,
           });
         }
@@ -121,7 +121,7 @@ class DLQTestMessageFunction extends SQSFunction<TestMessage> {
   //
   async handleMessageAsync(message: TestMessage): Promise<void> {
     //
-    await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
+    await testStateRepository.putTestResultAsync(`message-${message.index}`, {
       success: false,
     });
   }
@@ -143,29 +143,29 @@ class SQSFunctionTestPollerFunction extends TestPollerFunction {
 
     this.tests = {
       //
-      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
-        success: items.length === 1 && items[0].itemData.success === true,
+      [Scenarios.HandlesMessage]: ({ results }): TestPollResponse => ({
+        success: results.length === 1 && results[0].itemData.success === true,
       }),
 
-      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
+      [Scenarios.HandlesMessageBatch]: ({ results, params }): TestPollResponse => {
+        if (results.length < params.batchSize) {
           return {};
         }
         return {
           success:
-            items.length === params.batchSize &&
-            items.every((item) => item.itemData.success === true),
+            results.length === params.batchSize &&
+            results.every((item) => item.itemData.success === true),
         };
       },
 
-      [Scenarios.HandlesMessageBatchError]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
+      [Scenarios.HandlesMessageBatchError]: ({ results, params }): TestPollResponse => {
+        if (results.length < params.batchSize) {
           return {};
         }
         return {
           success:
-            items.length === params.batchSize &&
-            items.every((item) => item.itemData.success === (item.itemId !== 'message-7')),
+            results.length === params.batchSize &&
+            results.every((item) => item.itemData.success === (item.itemId !== 'message-7')),
         };
       },
     };

@@ -5,7 +5,7 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import path from 'path';
 import dotenv from 'dotenv';
-import TestRestApi from '../../agb-aws-test/TestRestApi';
+import { TestApi } from '../../agb-aws-test';
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ export default class ApiGatewayFunctionStack extends cdk.Stack {
       handler: 'parameterTestHandler',
     });
 
-    const testApi = new TestRestApi(this, 'ApiGatewayFunction', {
+    const testApi = new TestApi(this, 'ApiGatewayFunction', {
       testApiKeyValue: process.env.API_GATEWAY_FUNCTION_API_KEY,
       testStateTable: false,
     });

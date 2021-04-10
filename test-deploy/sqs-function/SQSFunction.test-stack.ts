@@ -7,7 +7,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaEventSources from '@aws-cdk/aws-lambda-event-sources';
 import * as sqs from '@aws-cdk/aws-sqs';
 import dotenv from 'dotenv';
-import { newTestFunction, TestRestApi } from '../../agb-aws-test';
+import { newTestFunction, TestApi } from '../../agb-aws-test';
 
 dotenv.config();
 
@@ -33,7 +33,7 @@ export default class SQSFunctionStack extends cdk.Stack {
     //
     super(scope, id, props);
 
-    const testApi = new TestRestApi(this, 'SQSFunction', {
+    const testApi = new TestApi(this, 'SQSFunction', {
       testApiKeyValue: process.env.SQS_FUNCTION_API_KEY,
     });
 

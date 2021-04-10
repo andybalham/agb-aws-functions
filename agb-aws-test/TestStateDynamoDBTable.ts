@@ -9,10 +9,10 @@ export default class TestStateDynamoDBTable extends dynamodb.Table {
     super(scope, `${id}TestStateTable`, {
       ...tableProps,
       ...{
-        // TODO 21Mar21: Could we set a time to live on this?
         partitionKey: { name: 'scenario', type: dynamodb.AttributeType.STRING },
         sortKey: { name: 'itemId', type: dynamodb.AttributeType.STRING },
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
       },
     });
   }

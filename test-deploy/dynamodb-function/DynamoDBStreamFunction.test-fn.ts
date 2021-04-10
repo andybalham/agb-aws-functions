@@ -91,14 +91,14 @@ class ProcessEventRecordFunction extends DynamoDBStreamFunction<TestItem> {
       //
       case Scenarios.HandlesInsert:
       case Scenarios.HandlesModify:
-        await testStateRepository.putTestResultItemAsync(`${eventType}-${newImage?.id}`, {
+        await testStateRepository.putTestResultAsync(`${eventType}-${newImage?.id}`, {
           oldImage,
           newImage,
         });
         break;
 
       case Scenarios.HandlesRemove:
-        await testStateRepository.putTestResultItemAsync(`${eventType}-${oldImage?.id}`, {
+        await testStateRepository.putTestResultAsync(`${eventType}-${oldImage?.id}`, {
           oldImage,
           newImage,
         });
@@ -127,35 +127,35 @@ class DynamoDBStreamFunctionTestPollerFunction extends TestPollerFunction {
 
     this.tests = {
       //
-      [Scenarios.HandlesInsert]: ({ items, params }): TestPollResponse => ({
-        success: items.some(
-          (item) =>
-            item.itemId === `INSERT-${params.instanceId}` &&
-            !item.itemData.oldImage &&
-            item.itemData.newImage
+      [Scenarios.HandlesInsert]: ({ results, params }): TestPollResponse => ({
+        success: results.some(
+          (result) =>
+            result.itemId === `INSERT-${params.instanceId}` &&
+            !result.itemData.oldImage &&
+            result.itemData.newImage
         )
           ? true
           : undefined,
       }),
 
-      [Scenarios.HandlesModify]: ({ items, params }): TestPollResponse => ({
-        success: items.some(
-          (item) =>
-            item.itemId === `MODIFY-${params.instanceId}` &&
-            item.itemData.oldImage &&
-            item.itemData.newImage &&
-            item.itemData.oldImage.value !== item.itemData.newImage.value
+      [Scenarios.HandlesModify]: ({ results, params }): TestPollResponse => ({
+        success: results.some(
+          (result) =>
+            result.itemId === `MODIFY-${params.instanceId}` &&
+            result.itemData.oldImage &&
+            result.itemData.newImage &&
+            result.itemData.oldImage.value !== result.itemData.newImage.value
         )
           ? true
           : undefined,
       }),
 
-      [Scenarios.HandlesRemove]: ({ items, params }): TestPollResponse => ({
-        success: items.some(
-          (item) =>
-            item.itemId === `REMOVE-${params.instanceId}` &&
-            item.itemData.oldImage &&
-            !item.itemData.newImage
+      [Scenarios.HandlesRemove]: ({ results, params }): TestPollResponse => ({
+        success: results.some(
+          (result) =>
+            result.itemId === `REMOVE-${params.instanceId}` &&
+            result.itemData.oldImage &&
+            !result.itemData.newImage
         )
           ? true
           : undefined,

@@ -5,7 +5,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNodejs from '@aws-cdk/aws-lambda-nodejs';
-import TestRestApi from './TestRestApi';
+import TestApi from './TestApi';
 import TestStateDynamoDBTable from './TestStateDynamoDBTable';
 import TestRunner, { TestPollResponse } from './TestRunner';
 import TestStarterFunction from './TestStarterFunction';
@@ -39,7 +39,7 @@ const newTestFunction = ({
 export {
   newTestFunction,
   TestRunner,
-  TestRestApi,
+  TestApi,
   TestStarterFunction,
   TestPollerFunction,
   TestPollResponse,

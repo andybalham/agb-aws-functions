@@ -11,10 +11,19 @@ import SNSFunctionStack from './sns-function/SNSFunction.test-stack';
 import SQSFunctionStack from './sqs-function/SQSFunction.test-stack';
 
 const app = new cdk.App();
-Tags.of(app).add('package', 'agb-aws-functions');
+Tags.of(app).add('app', 'agb-aws-functions');
 
-new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {});
-new SNSFunctionStack(app, 'SNSFunctionTest', {});
-new SQSFunctionStack(app, 'SQSFunctionTest', {});
-new S3FunctionStack(app, 'S3FunctionTest', {});
-new DynamoDBStreamFunctionStack(app, 'DynamoDBStreamFunctionTest', {});
+const apiGatewayFunctionStack = new ApiGatewayFunctionStack(app, 'ApiGatewayFunctionTest', {});
+Tags.of(apiGatewayFunctionStack).add('stack', 'ApiGatewayFunctionTest');
+
+const snsFunctionStack = new SNSFunctionStack(app, 'SNSFunctionTest', {});
+Tags.of(snsFunctionStack).add('stack', 'SNSFunctionTest');
+
+const sqsFunctionStack = new SQSFunctionStack(app, 'SQSFunctionTest', {});
+Tags.of(sqsFunctionStack).add('stack', 'SQSFunctionTest');
+
+const s3FunctionStack = new S3FunctionStack(app, 'S3FunctionTest', {});
+Tags.of(s3FunctionStack).add('stack', 'S3FunctionTest');
+
+const dynamoDBStreamFunctionStack = new DynamoDBStreamFunctionStack(app, 'DynDBStreamFnTest', {});
+Tags.of(dynamoDBStreamFunctionStack).add('stack', 'DynDBStreamFnTest');

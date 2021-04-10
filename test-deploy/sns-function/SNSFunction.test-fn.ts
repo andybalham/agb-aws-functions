@@ -82,11 +82,11 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     switch (message.scenario) {
       //
       case Scenarios.HandlesMessage:
-        await testStateRepository.putTestResultItemAsync('message', { success: true });
+        await testStateRepository.putTestResultAsync('message', { success: true });
         break;
 
       case Scenarios.HandlesMessageBatch:
-        await testStateRepository.putTestResultItemAsync(`message-${message.index}`, {
+        await testStateRepository.putTestResultAsync(`message-${message.index}`, {
           success: true,
         });
         break;
@@ -106,7 +106,7 @@ class ReceiveTestMessageFunction extends SNSFunction<TestMessage> {
     event: SNSEvent
   ): Promise<void> {
     await super.handleErrorAsync(error, message, eventRecord, event);
-    await testStateRepository.putTestResultItemAsync('result', {
+    await testStateRepository.putTestResultAsync('error', {
       errorMessage: error.message,
     });
   }
@@ -129,20 +129,20 @@ class SNSFunctionTestPollerFunction extends TestPollerFunction {
 
     this.tests = {
       //
-      [Scenarios.HandlesMessage]: ({ items }): TestPollResponse => ({
-        success: items.length === 1 && items[0].itemData.success === true,
+      [Scenarios.HandlesMessage]: ({ results }): TestPollResponse => ({
+        success: results.length === 1 && results[0].itemData.success === true,
       }),
 
-      [Scenarios.HandlesError]: ({ items }): TestPollResponse => ({
-        success: items.length === 1 && items[0].itemData.errorMessage === 'Test error',
+      [Scenarios.HandlesError]: ({ results }): TestPollResponse => ({
+        success: results.length === 1 && results[0].itemData.errorMessage === 'Test error',
       }),
 
-      [Scenarios.HandlesMessageBatch]: ({ items, params }): TestPollResponse => {
-        if (items.length < params.batchSize) {
+      [Scenarios.HandlesMessageBatch]: ({ results, params }): TestPollResponse => {
+        if (results.length < params.batchSize) {
           return {};
         }
         return {
-          success: items.every((item) => item.itemData.success === true),
+          success: results.every((result) => result.itemData.success === true),
         };
       },
     };

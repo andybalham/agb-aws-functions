@@ -7,7 +7,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as sns from '@aws-cdk/aws-sns';
 import * as subs from '@aws-cdk/aws-sns-subscriptions';
 import dotenv from 'dotenv';
-import { newTestFunction, TestRestApi } from '../../agb-aws-test';
+import { newTestFunction, TestApi } from '../../agb-aws-test';
 
 dotenv.config();
 
@@ -31,7 +31,7 @@ export default class SNSFunctionStack extends cdk.Stack {
     //
     super(scope, id, props);
 
-    const testApi = new TestRestApi(this, 'SNSFunction', {
+    const testApi = new TestApi(this, 'SNSFunction', {
       testApiKeyValue: process.env.SNS_FUNCTION_API_KEY,
     });
 

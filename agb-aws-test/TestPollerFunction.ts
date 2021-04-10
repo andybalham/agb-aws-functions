@@ -14,7 +14,7 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
       scenario: string;
       params: Record<string, any>;
       startTime: number;
-      items: TestStateItem[];
+      results: TestStateItem[];
     }) => TestPollResponse;
   } = {};
 
@@ -26,30 +26,30 @@ export default abstract class TestPollerFunction extends ApiGatewayFunction<
     //
     const currentTest = await this.testStateRepository.getCurrentTestAsync();
 
-    const currentTestItems = await this.testStateRepository.getTestItemsAsync(scenario);
+    const currentTestResults = await this.testStateRepository.getTestResultsAsync(scenario);
 
-    if (currentTestItems.length < 1) {
+    if (currentTestResults.length < 1) {
       return {};
     }
 
-    return this.pollTestAsync({ ...currentTest, items: currentTestItems });
+    return this.pollTestAsync({ ...currentTest, results: currentTestResults });
   }
 
   async pollTestAsync(test: {
     scenario: string;
     params: Record<string, any>;
     startTime: number;
-    items: TestStateItem[];
+    results: TestStateItem[];
   }): Promise<TestPollResponse> {
     //
     const testPoller = this.tests[test.scenario];
 
     if (testPoller === undefined) throw new Error(`testPoller === undefined for ${test.scenario}`);
 
-    const testPollResponse = testPoller(test);
-
     if (this.apiGatewayProps.log?.debug)
       this.apiGatewayProps.log?.debug('About to poll via', { testPoller });
+
+    const testPollResponse = testPoller(test);
 
     return testPollResponse;
   }
